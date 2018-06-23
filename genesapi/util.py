@@ -68,5 +68,7 @@ def cast_value(value):
             return int(value)
         return float(value)
     except ValueError:
+        if str(value).lower() in ('true', 'false'):
+            return value.lower() == 'true'
         if value:
             return value
