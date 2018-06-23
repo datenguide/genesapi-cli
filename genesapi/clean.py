@@ -58,7 +58,7 @@ def _get_yaml(fpath, yaml_dir, yaml_fp='', defaults={}):
 
 def _get_dtypes(dtypes, spec={}):
     dtypes = dtypes.map(str).T.to_dict()
-    dtypes.update(spec)
+    dtypes.update(spec.get('dtype', {}))
     return dtypes
 
 
