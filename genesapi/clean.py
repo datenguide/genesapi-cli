@@ -53,7 +53,7 @@ def _get_yaml(fpath, yaml_dir, yaml_fp='', defaults={}):
     if os.path.isfile(yaml_fp):
         defaults.update(_load_yaml(yaml_fp))
         return defaults
-    raise Exception('Could not find yaml for `%s`' % fpath)
+    raise FileNotFoundError('Could not find yaml for `%s`' % fpath)
 
 
 def _get_dtypes(dtypes, spec={}):
@@ -93,19 +93,22 @@ def main(args):
 
     elif os.path.isdir(source):
         logger.log(logging.DEBUG, 'Outputting to target `%s` ...' % target_dir)
-        files = [(f, _get_yaml(f, yaml_dir, '', defaults)) for f in
-                 get_files(source, lambda x: x.endswith('.csv'))]
+        files = get_files(source, lambda x: x.endswith('.csv'))
         dtypes = {}
 
-        for fp, spec in files:
+        for fp in files:
             logger.log(logging.INFO, 'Loading `%s` ...' % fp)
-            logger.log(logging.DEBUG, 'Spec: %s' % json.dumps(spec))
-            df = csv_to_pandas(fp, spec)
-            target_fp = os.path.join(target_dir, '%s.cleaned' % os.path.split(fp)[1])
-            df.fillna('').to_csv(target_fp, **_get_tocsv_kwargs(df))
-            logger.log(logging.INFO, 'Saved to `%s` .' % target_fp)
-            if args.dtypes:
-                dtypes.update(_get_dtypes(df.dtypes, spec))
+            try:
+                spec = _get_yaml(fp, yaml_dir, '', defaults)
+                logger.log(logging.DEBUG, 'Spec: %s' % json.dumps(spec))
+                df = csv_to_pandas(fp, spec)
+                target_fp = os.path.join(target_dir, '%s.cleaned' % os.path.split(fp)[1])
+                df.fillna('').to_csv(target_fp, **_get_tocsv_kwargs(df))
+                logger.log(logging.INFO, 'Saved to `%s` .' % target_fp)
+                if args.dtypes:
+                    dtypes.update(_get_dtypes(df.dtypes, spec))
+            except FileNotFoundError:
+                logger.log(logging.INFO, 'Skipping `%s` because no yaml spec found ...' % fp)
 
         if args.dtypes:
             with open(args.dtypes, 'w') as f:
