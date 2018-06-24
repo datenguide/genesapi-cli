@@ -68,7 +68,16 @@ def cast_value(value):
             return int(value)
         return float(value)
     except ValueError:
-        if str(value).lower() in ('true', 'false'):
-            return value.lower() == 'true'
-        if value:
+        try:
+            return eval(str(value))
+        except (NameError, SyntaxError):
             return value
+
+
+PANDAS_DTYPES = (
+    'str',
+    'object',
+    'int',
+    'float',
+    'bool'
+)

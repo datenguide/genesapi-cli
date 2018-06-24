@@ -59,6 +59,8 @@ def _get_yaml(fpath, yaml_dir, yaml_fp='', defaults={}):
 def _get_dtypes(dtypes, spec={}):
     dtypes = dtypes.map(str).T.to_dict()
     dtypes.update(spec.get('dtype', {}))
+    for col, dtype in spec.get('graphql_dtype', {}).items():
+        dtypes[col] = dtype
     return dtypes
 
 
