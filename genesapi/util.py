@@ -72,12 +72,3 @@ def cast_value(value):
             return eval(str(value))
         except (NameError, SyntaxError):
             return value
-
-
-PANDAS_DTYPES = (
-    'str',
-    'object',
-    'int',
-    'float',
-    'bool'
-)

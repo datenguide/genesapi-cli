@@ -14,7 +14,7 @@ import pandas as pd
 import os
 import sys
 
-from genesapi.util import get_files, parallelize, CPUS, PANDAS_DTYPES
+from genesapi.util import get_files, parallelize, CPUS
 
 
 logger = logging.getLogger(__name__)
@@ -57,7 +57,7 @@ def main(args):
         with open(fp) as f:
             columns = f.readline().strip().split(',')
             logger.log(logging.DEBUG, 'columns: %s' % ','.join(columns))
-        _dtypes = {k: v for k, v in dtypes.items() if k in columns and v in PANDAS_DTYPES}
+        _dtypes = {k: v for k, v in dtypes.items() if k in columns and '__' not in v}
         df = pd.read_csv(fp, dtype=_dtypes)
         df.index = df['_id']
         chunks.append(parallelize(_process_rows, list(df.iterrows()), source))
