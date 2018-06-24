@@ -8,6 +8,7 @@ import json
 import os
 import pandas as pd
 import sys
+import yaml
 
 from collections import defaultdict
 
@@ -63,14 +64,14 @@ def _get_key_tree(df):
     return t
 
 
-def _fix_tree(tree):
+def _tree_to_str(tree):
     return json.dumps(tree).replace('{}', 'null').replace('NaN', 'null')
 
 
 def _save_data_trees(trees, target):
     for id_, tree in trees:
         tree['id'] = id_
-        tree = _fix_tree(tree)
+        tree = _tree_to_str(tree)
         fp = os.path.join(target, '%s.json' % id_)
         with open(fp, 'w') as f:
             f.write(tree)
@@ -79,7 +80,9 @@ def _save_data_trees(trees, target):
 
 def main(args):
     logger.log(logging.INFO, 'Building tree out of `%s` ...' % args.source)
+
     df = pd.read_csv(args.source, dtype={'id': str})
+
     ids = df['id'].unique()
     chunks = [(id_, df[df['id'] == id_]) for id_ in ids]
     trees = parallelize(_get_data_trees, chunks)
@@ -99,18 +102,13 @@ def main(args):
         # add ids
         for id_ in ids:
             tree[id_]['id'] = id_
-        # import ipdb; ipdb.set_trace()
-        tree = _fix_tree(tree)
-        sys.stdout.write(tree)
 
-    # fix Hamburg and Berlin FIXME think about that.
-    # data_tree['02000'] = json.loads(json.dumps(data_tree['02']))
-    # data_tree['02000']['nuts']['level'] = 3
-    # data_tree['02000']['id'] = '02000'
-    # data_tree['02000']['name_ext'] = 'Hansestadt'
-    # data_tree['02000']['slug'] = 'hamburg'
-    # data_tree['11000'] = json.loads(json.dumps(data_tree['11']))
-    # data_tree['11000']['nuts']['level'] = 3
-    # data_tree['11000']['id'] = '11000'
-    # data_tree['11000']['name_ext'] = 'Hauptstadt'
-    # data_tree['11000']['slug'] = 'berlin'
+        if args.fix:
+            with open(args.fix) as f:
+                fixes = yaml.load(f)
+            for fix in fixes:
+                tree[fix['target']].update(tree[fix['source']])
+                tree[fix['target']].update(fix['data'])
+
+        tree = _tree_to_str(tree)
+        sys.stdout.write(tree)

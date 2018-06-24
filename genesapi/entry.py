@@ -54,6 +54,9 @@ COMMANDS = {
         }, {
             'flag': '--split',
             'help': 'Split trees by id and save them as JSON to this directory'
+        }, {
+            'flag': '--fix',
+            'help': 'YAML file with data fixes, currently only works without `--split` option'
         })
     },
     'sync_elasticsearch': {
