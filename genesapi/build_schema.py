@@ -9,7 +9,15 @@ import logging
 import os
 import sys
 
-from genesapi.util import get_cube, get_files, META_KEYS, parallelize, slugify_graphql, time_to_json
+from genesapi.util import (
+    get_cube,
+    get_files,
+    META_KEYS,
+    parallelize,
+    slugify_graphql,
+    time_to_json,
+    clean_description
+)
 
 
 logger = logging.getLogger(__name__)
@@ -59,10 +67,17 @@ def main(args):
         if root not in schema:
             schema[root] = {
                 'name': data['root_name'],
+                'description': None,
                 'source': json.loads(data['statistic']),
                 'dtype': 'str',
                 'args': {}
             }
+            if args.keys_directory:
+                fp = os.path.join(args.keys_directory, '%s_de.json' % root)
+                if os.path.isfile(fp):
+                    with open(fp) as f:
+                        desc = json.load(f)
+                    schema[root].update(description=clean_description(desc['description']))
         if data['dimension'] and data['dimension'] not in schema[root]['args']:
             schema[root]['args'][data['dimension']] = {
                 'name': data['dimension_name'],

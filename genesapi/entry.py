@@ -24,7 +24,10 @@ COMMANDS = {
         'args': ({
             'flag': 'directory',
             'help': 'Directory with raw cubes downloaded via the `fetch` command'
-        },)
+        }, {
+            'flag': '--keys-directory',
+            'help': 'Directory where JSON files of key description are'
+        })
     },
     'sync_elasticsearch': {
         'args': ({
