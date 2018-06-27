@@ -6,63 +6,33 @@ from importlib import import_module
 
 
 COMMANDS = {
-    'clean': {
+    'fetch': {
         'args': ({
-            'flag': 'source',
-            'help': 'CSV File or directory containing files (subdirectories will be included)'
+            'flag': 'catalog',
+            'help': 'YAML file with regensis catalog config'
         }, {
-            'flag': 'defaults',
-            'help': 'YAML File with default transform specification'
+            'flag': 'output',
+            'help': 'Directory where to store cube data'
         }, {
-            'flag': '--yaml',
-            'help': 'YAML File with transform specification'
-        }, {
-            'flag': '--yaml-dir',
-            'help': 'Look for yaml specifications in this directory (subdirectories will be included)'
-        }, {
-            'flag': '--target-dir',
-            'help': 'Directory where to put cleaned csv files into'
-        }, {
-            'flag': '--head',
-            'type': int,
-            'help': 'Print only this amount of lines for testing purposes'
-        }, {
-            'flag': '--dtypes',
-            'help': 'JSON file where to output dtypes metadata for keys'
+            'flag': '--raw',
+            'help': 'Store cube data raw (default)',
+            'action': 'store_true',
+            'default': True
         })
     },
-    'transform': {
+    'build_schema': {
         'args': ({
-            'flag': 'source',
-            'help': 'CSV File or directory containing cleaned files (subdirectories will be included)'
-        }, {
-            'flag': '--dtypes',
-            'help': 'JSON file with dtypes metadata for keys'
-        }, {
-            'flag': '--head',
-            'type': int,
-            'help': 'Print only this amount of lines for testing purposes'
-        })
-    },
-    'build_tree': {
-        'args': ({
-            'flag': 'source',
-            'help': 'CSV file of the transformed path data'
-        }, {
-            'flag': 'key_tree',
-            'help': 'JSON file to output keys tree to'
-        }, {
-            'flag': '--split',
-            'help': 'Split trees by id and save them as JSON to this directory'
-        }, {
-            'flag': '--fix',
-            'help': 'YAML file with data fixes, currently only works without `--split` option'
-        })
+            'flag': 'directory',
+            'help': 'Directory with raw cubes downloaded via the `fetch` command'
+        },)
     },
     'sync_elasticsearch': {
         'args': ({
-            'flag': 'source',
-            'help': 'JSON tree file our directory containing trees'
+            'flag': 'directory',
+            'help': 'Directory with raw cubes downloaded via the `fetch` command'
+        }, {
+            'flag': 'schema',
+            'help': 'JSON file from `build_schema` output'
         }, {
             'flag': '--host',
             'help': 'Elasticsearch host:port',
@@ -81,25 +51,46 @@ COMMANDS = {
             'action': 'store_true',
             'default': False
         }, {
+            'flag': '--shards',
+            'help': 'Number of shards for elasticsearch index',
+            'type': int,
+            'default': 5
+        }, {
+            'flag': '--replicas',
+            'help': 'Number of replicas for elasticsearch index',
+            'type': int,
+            'default': 0
+        }, {
             'flag': '--jobs',
             'help': 'Thread count for `parallel_bulk`',
             'type': int,
-            'default': 8
+            'default': 4
         }, {
             'flag': '--queue-size',
             'help': 'Queue size for `parallel_bulk`',
             'type': int,
-            'default': 8
+            'default': 4
         }, {
             'flag': '--chunk-size',
             'help': 'Number of documents per chunk',
             'type': int,
-            'default': 100
+            'default': 1000
         }, {
             'flag': '--chunk-bytes',
             'help': 'Maximum bytes per chunk',
             'type': int,
             'default': 512000000
+        }, {
+            'flag': '--split',
+            'help': '''Split the overall indexing into several chunks
+                       with breaks in between for the computer to cool down...''',
+            'type': int,
+            'default': 0
+        }, {
+            'flag': '--stop-on-error',
+            'help': 'Stop indexing process if 1 fact could not be indexed',
+            'action': 'store_true',
+            'default': False
         })
     },
     'build_keys': {

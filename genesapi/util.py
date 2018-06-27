@@ -1,7 +1,9 @@
+import json
 import os
 
-from slugify import slugify_de
 from multiprocessing import Pool, cpu_count
+from slugify import slugify_de
+from regenesis.cube import Cube
 
 
 CPUS = cpu_count()
@@ -62,13 +64,56 @@ def slugify(value, to_lower=True, separator='-'):
     return slugify_de(value, to_lower=to_lower, separator=separator)
 
 
-def cast_value(value):
+def get_cube(fp):
+    name = os.path.splitext(os.path.split(fp)[1])[0]
+    with open(fp) as f:
+        raw = f.read().strip()
+    return Cube(name, raw)
+
+
+def time_to_json(value):
     try:
-        if float(value) == int(value):
-            return int(value)
-        return float(value)
-    except ValueError:
-        try:
-            return eval(str(value))
-        except (NameError, SyntaxError):
-            return value
+        return value.isoformat()
+    except AttributeError:
+        return
+
+
+def cube_serializer(value):
+    value = time_to_json(value)
+    if value:
+        return value
+    try:
+        return value.to_dict()
+    except AttributeError:
+        return
+
+
+GENESIS_REGIONS = ('dinsg', 'dland', 'regbez', 'kreise', 'gemein')
+META_KEYS = GENESIS_REGIONS + ('stag', 'jahr', 'year', 'id', 'fact_id', 'nuts', 'cube')
+
+
+def slugify_graphql(value, to_lower=True):
+    """
+    make sure `return` value is graphql key conform,
+    meaning no '-' in it
+    """
+    if not isinstance(value, str):
+        return value
+    return slugify(value, separator='_', to_lower=to_lower)
+
+
+def serialize_fact(fact, cube_name):
+    """convert `regensis.cube.Fact` to json-seriable dict"""
+    fact = fact.to_dict()
+    fact['cube'] = cube_name
+    for nuts, key in enumerate(GENESIS_REGIONS):
+        if fact.get(key.upper()):
+            fact['id'] = fact.get(key.upper())
+            fact['nuts'] = nuts
+            break
+        if 'STAG' in fact:
+            fact['year'] = fact['STAG']['value'].split('.')[-1]
+        if 'JAHR' in fact:
+            fact['year'] = fact['JAHR']['value']
+    fact = {k.upper() if k not in META_KEYS else k: slugify_graphql(v, False) for k, v in fact.items()}
+    return json.loads(json.dumps(fact, default=time_to_json))
