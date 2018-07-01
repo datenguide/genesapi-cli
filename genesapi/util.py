@@ -103,10 +103,11 @@ def slugify_graphql(value, to_lower=True):
     return slugify(value, separator='_', to_lower=to_lower)
 
 
-def serialize_fact(fact, cube_name):
+def serialize_fact(fact, cube_name=None):
     """convert `regensis.cube.Fact` to json-seriable dict"""
     fact = fact.to_dict()
-    fact['cube'] = cube_name
+    if cube_name:
+        fact['cube'] = cube_name
     for nuts, key in enumerate(GENESIS_REGIONS):
         if fact.get(key.upper()):
             fact['id'] = fact.get(key.upper())

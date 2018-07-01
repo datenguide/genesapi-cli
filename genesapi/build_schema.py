@@ -69,7 +69,6 @@ def main(args):
                 'name': data['root_name'],
                 'description': None,
                 'source': json.loads(data['statistic']),
-                'dtype': 'str',
                 'args': {}
             }
             if args.keys_directory:
