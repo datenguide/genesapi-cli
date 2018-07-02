@@ -71,7 +71,7 @@ def main(args):
     client = Elasticsearch(hosts=[args.host], timeout=60)
     logger.log(logging.INFO, 'Using %s' % client)
 
-    facts = pd.read_csv(args.source)
+    facts = pd.read_csv(args.source).fillna('')
     _index(client, facts, args)
 
     logger.log(logging.INFO, 'Updating schema in `%s` ...' % args.schema)
