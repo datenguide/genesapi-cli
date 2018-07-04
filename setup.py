@@ -35,7 +35,8 @@ setup(
         'elasticsearch',
         'pandas',
         'pyyaml',
-        'awesome-slugify'
+        'awesome-slugify',
+        'zeep'
     ],
     zip_safe=False
 )

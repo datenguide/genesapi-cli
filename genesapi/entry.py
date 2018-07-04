@@ -20,6 +20,15 @@ COMMANDS = {
             'default': True
         })
     },
+    'fetch_attributes': {
+        'args': ({
+            'flag': 'catalog',
+            'help': 'YAML file with catalog config'
+        }, {
+            'flag': 'output',
+            'help': 'Directory where to store attributes data'
+        })
+    },
     'build_schema': {
         'args': ({
             'flag': 'directory',
