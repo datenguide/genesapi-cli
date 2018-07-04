@@ -65,23 +65,32 @@ def main(args):
     schema = {}
     for root, data in df.iterrows():
         if root not in schema:
-            schema[root] = {
+            root_data = {
                 'name': data['root_name'],
                 'description': None,
                 'source': json.loads(data['statistic']),
                 'args': {}
             }
             if args.keys_directory:
-                fp = os.path.join(args.keys_directory, '%s_de.json' % root)
+                fp = os.path.join(args.keys_directory, '%s.json' % root)
                 if os.path.isfile(fp):
                     with open(fp) as f:
                         desc = json.load(f)
-                    schema[root].update(description=clean_description(desc['description']))
+                    root_data.update(description=clean_description(desc['description']))
+            schema[root] = root_data
         if data['dimension'] and data['dimension'] not in schema[root]['args']:
-            schema[root]['args'][data['dimension']] = {
+            dim_data = {
                 'name': data['dimension_name'],
+                'description': None,
                 'values': []
             }
+            if args.keys_directory:
+                fp = os.path.join(args.keys_directory, '%s.json' % data['dimension'])
+                if os.path.isfile(fp):
+                    with open(fp) as f:
+                        desc = json.load(f)
+                    dim_data.update(description=clean_description(desc['description']))
+            schema[root]['args'][data['dimension']] = dim_data
         if data['value']:
             schema[root]['args'][data['dimension']]['values'].append({
                 'value': data['value'],
