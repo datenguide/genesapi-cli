@@ -46,6 +46,14 @@ COMMANDS = {
             'flag': 'schema',
             'help': 'JSON file from `build_schema` output'
         }, {
+            'flag': '--fulltext',
+            'help': 'Index each fact with a computed string for fulltext search',
+            'action': 'store_true',
+            'default': False
+        }, {
+            'flag': '--names',
+            'help': 'When using `--fulltext`, obtain names from this json {id => name} mapping',
+        }, {
             'flag': '--host',
             'help': 'Elasticsearch host:port',
             'default': 'localhost:9200'
@@ -156,12 +164,6 @@ COMMANDS = {
             'action': 'store_true',
             'default': False
         })
-    },
-    'build_keys': {
-        'args': ({
-            'flag': 'source',
-            'help': 'Directory where keys json are, including subdirectories'
-        },)
     }
 }
 

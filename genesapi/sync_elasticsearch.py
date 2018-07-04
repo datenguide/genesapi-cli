@@ -13,13 +13,13 @@ import os
 from elasticsearch import Elasticsearch
 from elasticsearch.helpers import parallel_bulk
 
-from genesapi.util import compute_fact_id, get_chunks, get_files, get_cube, serialize_fact
+from genesapi.util import compute_fact_id, get_chunks, get_files, get_fulltext, get_cube, serialize_fact
 
 
 logger = logging.getLogger(__name__)
 
 
-def _get_fact(fact, cube_name, index):
+def _get_fact(fact, cube_name, index, get_fulltext):
     action = {
         '_op_type': 'index',
         '_index': index,
@@ -28,10 +28,12 @@ def _get_fact(fact, cube_name, index):
     body = serialize_fact(fact, cube_name)
     body['_id'] = compute_fact_id(body)
     action.update(body)
+    if get_fulltext:
+        action['fulltext'] = get_fulltext(body)
     return action
 
 
-def _get_facts(files, index):
+def _get_facts(files, index, get_fulltext):
     """
     return generator for facts to index
     that `elasticsearch.helpers.parallel_bulk` will use
@@ -40,25 +42,32 @@ def _get_facts(files, index):
         logger.log(logging.INFO, 'Loading cube `%s` (%s of %s) ...' % (file, i+1, len(files)))
         cube = get_cube(file)
         for fact in cube.facts:
-            yield _get_fact(fact, cube.name, index)
+            yield _get_fact(fact, cube.name, index, get_fulltext)
 
 
-def _get_mapping(schema):
+def _get_index_body(schema, args):
     return {
-        'fact': {
-            'properties': {
-                field: {'type': 'keyword'}
-                for field in set(f for v in schema.values() for f in v.get('args', {}).keys() | set(['id', 'year']))
+        'mappings': {
+            'fact': {
+                'properties': {
+                    field: {'type': 'keyword'}
+                    for field in set(f for v in schema.values() for f in v.get('args', {}).keys() | set(['id', 'year']))
+                }
             }
+        },
+        'settings': {
+            'index.mapping.total_fields.limit': 100000,
+            'index.number_of_shards': args.shards,
+            'index.number_of_replicas': args.replicas
         }
     }
 
 
-def _index_files(client, files, args):
+def _index_files(client, files, args, get_fulltext):
     logger.log(logging.INFO, 'Indexing %s files ...' % len(files))
     res = parallel_bulk(
         client,
-        _get_facts(files, args.index),
+        _get_facts(files, args.index, get_fulltext),
         thread_count=args.jobs,
         chunk_size=args.chunk_size,
         queue_size=min((args.queue_size, args.jobs)),
@@ -93,33 +102,34 @@ def main(args):
     with open(args.schema) as f:
         schema = json.load(f)
 
-    index_body = {
-        'mappings': _get_mapping(schema),
-        'settings': {
-            'index.mapping.total_fields.limit': 100000,
-            'index.number_of_shards': args.shards,
-            'index.number_of_replicas': args.replicas
-        }
-    }
-
     if not client.indices.exists(args.index):
-        client.indices.create(args.index, body=index_body)
+        client.indices.create(args.index, body=_get_index_body(schema, args))
     elif args.overwrite:
         client.indices.delete(args.index)
-        client.indices.create(args.index, body=index_body)
+        client.indices.create(args.index, body=_get_index_body(schema, args))
 
     es_logger = logging.getLogger('elasticsearch')
     es_logger.setLevel(logging.WARNING)
+
+    _get_fulltext = False
+    if args.fulltext:
+        names = {}
+        if args.names:
+            with open(args.names) as f:
+                names = json.load(f)
+
+        def _get_fulltext(fact):
+            return get_fulltext(fact, schema, names)
 
     if args.split:
         files = get_files(args.directory, lambda x: x.endswith('.csv'))
         chunks = get_chunks(files, args.split)
         for chunk in chunks:
-            _index_files(client, chunk, args)
+            _index_files(client, chunk, args, _get_fulltext)
             logger.log(logging.INFO, 'Waiting for 10sec to cool down ...')
             gc.collect()
             del gc.garbage[:]
             time.sleep(10)
     else:
         files = get_files(args.directory, lambda x: x.endswith('.csv'))
-        _index_files(client, files, args)
+        _index_files(client, files, args, _get_fulltext)

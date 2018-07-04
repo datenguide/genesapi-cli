@@ -135,3 +135,26 @@ def serialize_fact(fact, cube_name=None):
 
 def clean_description(raw):
     return re.sub('.(\\n).', lambda x: x.group(0).replace('\n', ' '), re.sub('<.*?>', '', raw or '')).strip()
+
+
+def get_fulltext(fact, schema, names):
+    parts = [names.get(fact['id'], ''), fact.get('year', ''), fact['id']]
+    schemas = {k: schema[k] for k in fact.keys() if k in schema}
+    args = [(k, v) for k, v in fact.items() if k not in tuple(schema.keys()) + META_KEYS]
+    for k, info in schemas.items():
+        name = info.get('name')
+        if name:
+            parts.append(name)
+        source = info.get('source', {}).get('title_de')
+        if source:
+            parts.append(source)
+        for arg, value in args:
+            arg_info = info.get('args', {}).get(arg)
+            if arg_info:
+                arg_name = arg_info.get('name')
+                if arg_name:
+                    parts.append(arg_name)
+                value = [v.get('name') for v in arg_info.get('values', []) if v['value'] == value]
+                if len(value) and value[0]:
+                    parts.append(value[0])
+    return ' '.join(parts).strip()
