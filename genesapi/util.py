@@ -5,6 +5,7 @@ import re
 from multiprocessing import Pool, cpu_count
 from slugify import slugify_de
 from regenesis.cube import Cube
+from regenesis.util import make_key
 
 
 CPUS = cpu_count()
@@ -103,6 +104,17 @@ def slugify_graphql(value, to_lower=True):
     return slugify(value, separator='_', to_lower=to_lower)
 
 
+def compute_fact_id(fact):
+    """because the `fact_id` generated in `regenesis.cube` is not unique"""
+    parts = []
+    for key, value in fact.items():
+        if key.lower() not in META_KEYS or key.lower() in ('id', 'year', 'cube'):
+            if isinstance(value, dict):
+                value = value['value']
+            parts.append('%s:%s' % (key, value))
+    return make_key(sorted(parts))
+
+
 def serialize_fact(fact, cube_name=None):
     """convert `regensis.cube.Fact` to json-seriable dict"""
     fact = fact.to_dict()
@@ -113,10 +125,10 @@ def serialize_fact(fact, cube_name=None):
             fact['id'] = fact.get(key.upper())
             fact['nuts'] = nuts
             break
-        if 'STAG' in fact:
-            fact['year'] = fact['STAG']['value'].split('.')[-1]
-        if 'JAHR' in fact:
-            fact['year'] = fact['JAHR']['value']
+    if 'STAG' in fact:
+        fact['year'] = fact['STAG']['value'].split('.')[-1]
+    if 'JAHR' in fact:
+        fact['year'] = fact['JAHR']['value']
     fact = {k.upper() if k not in META_KEYS else k: slugify_graphql(v, False) for k, v in fact.items()}
     return json.loads(json.dumps(fact, default=time_to_json))
 

@@ -13,7 +13,7 @@ import os
 from elasticsearch import Elasticsearch
 from elasticsearch.helpers import parallel_bulk
 
-from genesapi.util import get_chunks, get_files, get_cube, serialize_fact
+from genesapi.util import compute_fact_id, get_chunks, get_files, get_cube, serialize_fact
 
 
 logger = logging.getLogger(__name__)
@@ -26,7 +26,7 @@ def _get_fact(fact, cube_name, index):
         '_type': 'fact',
     }
     body = serialize_fact(fact, cube_name)
-    body['_id'] = body.get('fact_id')
+    body['_id'] = compute_fact_id(body)
     action.update(body)
     return action
 
@@ -48,7 +48,7 @@ def _get_mapping(schema):
         'fact': {
             'properties': {
                 field: {'type': 'keyword'}
-                for field in set(f for v in schema.values() for f in v['args'].keys() | set(['id', 'year']))
+                for field in set(f for v in schema.values() for f in v.get('args', {}).keys() | set(['id', 'year']))
             }
         }
     }
@@ -116,10 +116,10 @@ def main(args):
         chunks = get_chunks(files, args.split)
         for chunk in chunks:
             _index_files(client, chunk, args)
-            logger.log(logging.INFO, 'Waiting for 30sec to cool down ...')
+            logger.log(logging.INFO, 'Waiting for 10sec to cool down ...')
             gc.collect()
             del gc.garbage[:]
-            time.sleep(30)
+            time.sleep(10)
     else:
         files = get_files(args.directory, lambda x: x.endswith('.csv'))
         _index_files(client, files, args)
