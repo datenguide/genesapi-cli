@@ -21,7 +21,7 @@ def get_chunks(iterable, n=CPUS):
     if total < n:
         return [iterable]
     for i in range(n):
-        if not i-1 == n:
+        if not i+1 == n:
             chunks.append(iterable[i*chunk_size:(i+1)*chunk_size])
         else:
             chunks.append(iterable[i*chunk_size:])
