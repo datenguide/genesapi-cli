@@ -16,10 +16,10 @@ def get_chunks(iterable, n=CPUS):
     split up an iterable into n chunks
     """
     total = len(iterable)
+    if total < n:
+        return [[i] for i in iterable]
     chunk_size = int(total / n)
     chunks = []
-    if total < n:
-        return [iterable]
     for i in range(n):
         if not i+1 == n:
             chunks.append(iterable[i*chunk_size:(i+1)*chunk_size])
