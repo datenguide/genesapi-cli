@@ -91,7 +91,7 @@ def cube_serializer(value):
 
 
 GENESIS_REGIONS = ('dinsg', 'dland', 'regbez', 'kreise', 'gemein')
-META_KEYS = GENESIS_REGIONS + ('stag', 'jahr', 'year', 'id', 'fact_id', 'nuts', 'cube')
+META_KEYS = GENESIS_REGIONS + ('stag', 'jahr', 'year', 'id', 'fact_id', 'nuts_level', 'cube')
 
 
 def slugify_graphql(value, to_lower=True):
@@ -123,7 +123,7 @@ def serialize_fact(fact, cube_name=None):
     for nuts, key in enumerate(GENESIS_REGIONS):
         if fact.get(key.upper()):
             fact['id'] = fact.get(key.upper())
-            fact['nuts'] = nuts
+            fact['nuts_level'] = nuts if nuts < 4 else None
             break
     if 'STAG' in fact:
         fact['year'] = fact['STAG']['value'].split('.')[-1]
