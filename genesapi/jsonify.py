@@ -6,7 +6,6 @@ jsonify cubes records
 import json
 import logging
 import os
-import re
 import sys
 
 from genesapi.util import (
@@ -22,15 +21,12 @@ from genesapi.util import (
 logger = logging.getLogger(__name__)
 
 
-alnum_pattern = re.compile('[\W_]+', re.UNICODE)
-
-
 def _get_fact(fact, cube_name, args):
     data = serialize_fact(fact, cube_name)
     id_ = compute_fact_id(data)
     data['fact_id'] = id_
     if args.fulltext:
-        parts = [alnum_pattern.sub('', p) for p in get_fulltext_parts(data, args.schema, args.names)]
+        parts = list(get_fulltext_parts(data, args.schema, args.names))
         data['fulltext'] = ' '.join(parts)
         data['fulltext_suggest'] = list({p for p in parts if len(p) > 5})
     if args.output:
