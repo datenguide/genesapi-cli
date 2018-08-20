@@ -66,7 +66,7 @@ def slugify(value, to_lower=True, separator='-'):
     return slugify_de(value, to_lower=to_lower, separator=separator)
 
 
-def get_cube(fp):
+def load_cube(fp):
     name = os.path.splitext(os.path.split(fp)[1])[0]
     with open(fp) as f:
         raw = f.read().strip()

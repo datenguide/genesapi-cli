@@ -10,7 +10,7 @@ import os
 import sys
 
 from genesapi.util import (
-    get_cube,
+    load_cube,
     get_files,
     META_KEYS,
     parallelize,
@@ -25,7 +25,7 @@ logger = logging.getLogger(__name__)
 
 def _get_schema(files):
     res = []
-    cubes = (get_cube(fp) for fp in files)
+    cubes = (load_cube(fp) for fp in files)
     for cube in cubes:
         logger.log(logging.INFO, 'Loading `%s` ...' % cube.name)
         roots = [v for k, v in cube.dimensions.items() if k.lower() not in META_KEYS and not v.values]
