@@ -32,9 +32,9 @@ setup(
         ]
     },
     install_requires=[
-        'elasticsearch',
         'pandas',
         'pyyaml',
+        'python-frontmatter',
         'awesome-slugify',
         'zeep'
     ],

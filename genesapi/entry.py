@@ -38,38 +38,28 @@ COMMANDS = {
             'help': 'Directory where JSON files of key description are'
         })
     },
-    'sync_elasticsearch': {
+    'build_jekyll': {
         'args': ({
-            'flag': 'directory',
-            'help': 'Directory with raw cubes downloaded via the `fetch` command'
+            'flag': 'schema',
+            'help': 'JSON file from `build_schema` output'
         }, {
+            'flag': 'output',
+            'help': 'Output directory.'
+        })
+    },
+    'build_es_template': {
+        'args': ({
             'flag': 'schema',
             'help': 'JSON file from `build_schema` output'
         }, {
             'flag': '--fulltext',
-            'help': 'Index each fact with a computed string for fulltext search',
+            'help': 'Add a completion field for fulltext suggestions',
             'action': 'store_true',
             'default': False
-        }, {
-            'flag': '--names',
-            'help': 'When using `--fulltext`, obtain names from this json {id => name} mapping',
-        }, {
-            'flag': '--host',
-            'help': 'Elasticsearch host:port',
-            'default': 'localhost:9200'
         }, {
             'flag': '--index',
             'help': 'Name of elasticsearch index',
             'default': 'genesapi'
-        }, {
-            'flag': '--overwrite',
-            'help': 'Overwrite existing index',
-            'action': 'store_true'
-        }, {
-            'flag': '--quiet',
-            'help': 'Don\'t raise exceptions from elasticsearch client',
-            'action': 'store_true',
-            'default': False
         }, {
             'flag': '--shards',
             'help': 'Number of shards for elasticsearch index',
@@ -80,37 +70,31 @@ COMMANDS = {
             'help': 'Number of replicas for elasticsearch index',
             'type': int,
             'default': 0
+        })
+    },
+    'jsonify': {
+        'args': ({
+            'flag': 'directory',
+            'help': 'Directory with raw cubes downloaded via the `fetch` command'
         }, {
-            'flag': '--jobs',
-            'help': 'Thread count for `parallel_bulk`',
-            'type': int,
-            'default': 4
+            'flag': '--output',
+            'help': 'Output directory. If none, print each record per line to stdout'
         }, {
-            'flag': '--queue-size',
-            'help': 'Queue size for `parallel_bulk`',
-            'type': int,
-            'default': 4
-        }, {
-            'flag': '--chunk-size',
-            'help': 'Number of documents per chunk',
-            'type': int,
-            'default': 1000
-        }, {
-            'flag': '--chunk-bytes',
-            'help': 'Maximum bytes per chunk',
-            'type': int,
-            'default': 512000000
-        }, {
-            'flag': '--split',
-            'help': '''Split the overall indexing into several chunks
-                       with breaks in between for the computer to cool down...''',
-            'type': int,
-            'default': 0
-        }, {
-            'flag': '--stop-on-error',
-            'help': 'Stop indexing process if 1 fact could not be indexed',
+            'flag': '--pretty',
+            'help': 'Print pretty indented json',
             'action': 'store_true',
             'default': False
+        }, {
+            'flag': '--fulltext',
+            'help': 'Create computed string for fulltext search for each fact',
+            'action': 'store_true',
+            'default': False
+        }, {
+            'flag': '--schema',
+            'help': 'When using `--fulltext`, use this JSON file from `build_schema` output'
+        }, {
+            'flag': '--names',
+            'help': 'When using `--fulltext`, obtain names from this json {id => name} mapping',
         })
     },
     'sync_extra_facts': {
