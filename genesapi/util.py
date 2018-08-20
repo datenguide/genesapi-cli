@@ -2,6 +2,7 @@ import json
 import os
 import re
 
+from datetime import datetime
 from multiprocessing import Pool, cpu_count
 from slugify import slugify_de
 from regenesis.cube import Cube
@@ -91,7 +92,7 @@ def cube_serializer(value):
 
 
 GENESIS_REGIONS = ('dinsg', 'dland', 'regbez', 'kreise', 'gemein')
-META_KEYS = GENESIS_REGIONS + ('stag', 'jahr', 'year', 'id', 'fact_id', 'nuts_level', 'cube')
+META_KEYS = GENESIS_REGIONS + ('stag', 'date', 'jahr', 'year', 'id', 'fact_id', 'nuts_level', 'cube')
 
 
 def slugify_graphql(value, to_lower=True):
@@ -108,7 +109,7 @@ def compute_fact_id(fact):
     """because the `fact_id` generated in `regenesis.cube` is not unique"""
     parts = []
     for key, value in fact.items():
-        if key.lower() not in META_KEYS or key.lower() in ('id', 'year', 'cube'):
+        if key.lower() not in META_KEYS or key.lower() in ('id', 'date', 'year', 'cube'):
             if isinstance(value, dict):
                 value = value['value']
             parts.append('%s:%s' % (key, value))
@@ -126,10 +127,14 @@ def serialize_fact(fact, cube_name=None):
             fact['nuts_level'] = nuts if nuts < 4 else None
             break
     if 'STAG' in fact:
-        fact['year'] = fact['STAG']['value'].split('.')[-1]
+        date = datetime.strptime(fact['STAG']['value'], '%d.%m.%Y').date()
+        fact['date'] = date.isoformat()
+        fact['year'] = str(date.year)
     if 'JAHR' in fact:
         fact['year'] = fact['JAHR']['value']
-    fact = {k.upper() if k not in META_KEYS else k: slugify_graphql(v, False) for k, v in fact.items()}
+    fact = {k.upper() if k.lower() not in META_KEYS else k.lower():
+            slugify_graphql(v, False) if k not in META_KEYS else v
+            for k, v in fact.items()}
     return json.loads(json.dumps(fact, default=time_to_json))
 
 
