@@ -27,6 +27,11 @@ COMMANDS = {
         }, {
             'flag': 'output',
             'help': 'Directory where to store attributes data'
+        }, {
+            'flag': '--replace',
+            'help': 'Replace existing (previously downloaded) attributes',
+            'action': 'store_true',
+            'default': False
         })
     },
     'build_schema': {

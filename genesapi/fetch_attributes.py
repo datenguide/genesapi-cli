@@ -39,6 +39,7 @@ def _get_attribute_keys(client, username, password):
 
 
 def _get_attribute(client, username, password, code):
+    # FIXME make multilangual
     # for lang in ('de', 'en'):
     #     sys.stdout.write('Retrieving information for code "%s" in language "%s" ...\n' % (code, lang))
     try:
@@ -77,9 +78,12 @@ def main(args):
 
     for code in _get_attribute_keys(ResearchClient, catalog['username'], catalog['password']):
         fp = os.path.join(args.output, '%s.json' % code.replace('-', '_'))
-        if os.path.isfile(fp):
+        exists = os.path.isfile(fp)
+        if exists and not args.replace:
             logger.log(logging.INFO, 'Key `%s` already exists, skipping ...' % code)
         else:
+            if exists and args.replace:
+                logger.log(logging.INFO, 'Key `%s` already exists, replacing ...' % code)
             logger.log(logging.INFO, 'Downloading `%s` from `%s` ...' % (code, catalog['export_url']))
             key = _get_attribute(ExportClient, catalog['username'], catalog['password'], code)
             if key:
