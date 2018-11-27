@@ -14,10 +14,10 @@ COMMANDS = {
             'flag': 'output',
             'help': 'Directory where to store cube data'
         }, {
-            'flag': '--raw',
-            'help': 'Store cube data raw (default)',
+            'flag': '--replace',
+            'help': 'Replace existing (previously downloaded) cubes',
             'action': 'store_true',
-            'default': True
+            'default': False
         })
     },
     'fetch_attributes': {

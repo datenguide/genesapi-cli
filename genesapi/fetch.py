@@ -23,9 +23,12 @@ def main(args):
     logger.log(logging.INFO, 'Obtaining index from `%s` ...' % catalog['index_url'])
     for name in fetch_index(catalog):
         fp = os.path.join(args.output, '%s.csv' % name)
-        if os.path.isfile(fp):
+        exists = os.path.isfile(fp)
+        if exists and not args.replace:
             logger.log(logging.INFO, 'Cube `%s` already exists, skipping ...' % name)
         else:
+            if exists and args.replace:
+                logger.log(logging.INFO, 'Cube `%s` already exists, replacing ...' % name)
             logger.log(logging.INFO, 'Downloading `%s` from `%s` ...' % (name, catalog['export_url']))
             cube = fetch_cube(catalog, name)
             if cube:
