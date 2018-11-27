@@ -1,3 +1,4 @@
+import copy
 import json
 import os
 import re
@@ -92,7 +93,9 @@ def cube_serializer(value):
 
 
 GENESIS_REGIONS = ('dinsg', 'dland', 'regbez', 'kreise', 'gemein')
-META_KEYS = GENESIS_REGIONS + ('stag', 'date', 'jahr', 'year', 'id', 'fact_id', 'nuts_level', 'cube')
+META_KEYS = GENESIS_REGIONS + (
+    'stag', 'date', 'jahr', 'year', 'id', 'fact_id', 'nuts_level', 'cube', 'fact_key', 'fact_value'
+)
 
 
 def slugify_graphql(value, to_lower=True):
@@ -116,22 +119,42 @@ def compute_fact_id(fact):
     return make_key(sorted(parts))
 
 
+def unpack_fact(fact, schema):
+    """
+    if a fact from `regensis.cube.Fact` has more than one root key (`Merkmal`)
+    split this fact into as many facts as the original has root keys
+    """
+    if not isinstance(fact, dict):
+        fact = fact.to_dict()
+    root_keys = set(schema.keys()) & set(fact.keys())
+    for key in root_keys:
+        new_fact = copy.deepcopy(fact)
+        new_fact['fact_key'] = key
+        new_fact['fact_value'] = new_fact[key]['value']
+        for obsolete_key in root_keys - set([key]):
+            del new_fact[obsolete_key]
+        yield new_fact
+
+
 def serialize_fact(fact, cube_name=None):
     """convert `regensis.cube.Fact` to json-seriable dict"""
-    fact = fact.to_dict()
     if cube_name:
         fact['cube'] = cube_name
     for nuts, key in enumerate(GENESIS_REGIONS):
-        if fact.get(key.upper()):
-            fact['id'] = fact.get(key.upper())
+        key = key.upper()
+        if fact.get(key):
+            fact['id'] = fact.get(key)
             fact['nuts_level'] = nuts if nuts < 4 else None
+            del fact[key]
             break
     if 'STAG' in fact:
         date = datetime.strptime(fact['STAG']['value'], '%d.%m.%Y').date()
         fact['date'] = date.isoformat()
         fact['year'] = str(date.year)
+        del fact['STAG']
     if 'JAHR' in fact:
         fact['year'] = fact['JAHR']['value']
+        del fact['JAHR']
     fact = {k.upper() if k.lower() not in META_KEYS else k.lower():
             slugify_graphql(v, False) if k not in META_KEYS else v
             for k, v in fact.items()}
@@ -145,34 +168,54 @@ def clean_description(raw):
 alnum_pattern = re.compile('[\W_]+', re.UNICODE)
 
 
-def remove_punctuation(value):
-    return alnum_pattern.sub(' ', value or '')
+# def remove_punctuation(value):
+#     return alnum_pattern.sub(' ', value or '')
 
 
 def get_fulltext_parts(fact, schema, names):
-    schemas = {k: schema[k] for k in fact.keys() if k in schema}
-    args = [(k, v) for k, v in fact.items() if k not in tuple(schema.keys()) + META_KEYS]
+    key = schema[fact['fact_key']]
+    exclude = tuple(schema.keys()) + META_KEYS
+    args = [(k, v) for k, v in fact.items() if k not in exclude]
     parts = [names.get(fact['id']), fact.get('year'), fact['id']]
     for part in parts:
         if part:
             yield part
-    for k, info in schemas.items():
-        name = remove_punctuation(info.get('name'))
-        if name:
-            for n in name.split():
-                yield n
-        source = remove_punctuation(info.get('source', {}).get('title_de'))
-        if source:
-            for s in source.split():
-                yield s
-        for arg, value in args:
-            arg_info = info.get('args', {}).get(arg)
-            if arg_info:
-                arg_name = remove_punctuation(arg_info.get('name'))
-                if arg_name:
-                    for a in arg_name.split():
-                        yield a
-                value = [v.get('name') for v in arg_info.get('values', []) if v['value'] == value]
-                if len(value) and value[0]:
-                    for v in remove_punctuation(value[0]).split():
-                        yield v
+    name = key.get('name')
+    if name:
+        yield name
+    source = key.get('source', {}).get('title_de')
+    if source:
+        yield source
+    for arg, value in args:
+        arg_info = key.get('args', {}).get(arg)
+        if arg_info:
+            arg_name = arg_info.get('name')
+            if arg_name:
+                yield arg_name
+            value = [v.get('name') for v in arg_info.get('values', []) if v['value'] == value]
+            if len(value) and value[0]:
+                yield value[0]
+
+
+def get_fact_context(data, schema, names):
+    return {
+        'region_name': names.get(data['id']),
+        'key_name': schema.get(data['fact_key'], {}).get('name'),
+        'source_name': schema.get(data['fact_key'], {}).get('source', {}).get('title_de'),
+    }
+
+
+def get_fulltext_data(data, args):
+    parts = list(get_fulltext_parts(data, args.schema, args.names))
+    suggestions = [data['id']] + list({p for p in parts if len(p) > 5})
+    context = [data['id']] + [c for c in get_fact_context(data, args.schema, args.names).values() if c]
+    return {
+        'fulltext': ' '.join(parts),
+        'fulltext_suggest': suggestions,
+        'fulltext_suggest_context': {
+            'input': suggestions,
+            'contexts': {
+                'suggest_context': [c.lower() for c in context]
+            }
+        }
+    }

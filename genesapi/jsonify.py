@@ -14,41 +14,48 @@ from genesapi.util import (
     load_cube,
     serialize_fact,
     parallelize,
-    get_fulltext_parts
+    get_fulltext_data,
+    unpack_fact
 )
 
 
 logger = logging.getLogger(__name__)
 
 
-def _get_fact(fact, cube_name, args):
-    data = serialize_fact(fact, cube_name)
-    id_ = compute_fact_id(data)
-    data['fact_id'] = id_
-    if args.fulltext:
-        parts = list(get_fulltext_parts(data, args.schema, args.names))
-        data['fulltext'] = ' '.join(parts)
-        data['fulltext_suggest'] = list({p for p in parts if len(p) > 5})
-    if args.output:
-        path = os.path.join(args.output, cube_name)
-        os.makedirs(path, exist_ok=True)
-        with open(os.path.join(path, '%s.json' % id_), 'w') as f:
-            if args.pretty:
-                json.dump(data, f, indent=2)
-            else:
-                json.dump(data, f)
-    else:
-        if args.pretty:
-            return json.dumps(data, indent=2)
+def _get_facts(orig_fact, cube_name, args):
+    i = 0
+    for fact in unpack_fact(orig_fact, args.schema):
+        data = serialize_fact(fact, cube_name)
+        id_ = compute_fact_id(data)
+        data['fact_id'] = id_
+        if args.fulltext:
+            data.update(get_fulltext_data(data, args))
+        if args.output:
+            path = os.path.join(args.output, cube_name)
+            os.makedirs(path, exist_ok=True)
+            with open(os.path.join(path, '%s.json' % id_), 'w') as f:
+                if args.pretty:
+                    json.dump(data, f, indent=2)
+                else:
+                    json.dump(data, f)
+            yield id_
         else:
-            return json.dumps(data)
+            if args.pretty:
+                yield json.dumps(data, indent=2)
+            else:
+                yield json.dumps(data)
+
+        i += 1
+
+    if i > 1:
+        logger.log(logging.DEBUG, 'unpacked %s facts' % i)
 
 
-def _get_facts(facts, cube_name, args):
+def _get_cube_facts(facts, cube_name, args):
     res = []
     for fact in facts:
-        serialized_fact = _get_fact(fact, cube_name, args)
-        res.append(serialized_fact)
+        for serialized_fact in _get_facts(fact, cube_name, args):
+            res.append(serialized_fact)
     return res
 
 
@@ -56,7 +63,7 @@ def _get_json_facts(files, args):
     for i, file in enumerate(files):
         logger.log(logging.INFO, 'Loading cube `%s` (%s of %s) ...' % (file, i+1, len(files)))
         cube = load_cube(file)
-        facts = parallelize(_get_facts, cube.facts, cube.name, args)
+        facts = parallelize(_get_cube_facts, cube.facts, cube.name, args)
         for fact in facts:
             yield fact
 
