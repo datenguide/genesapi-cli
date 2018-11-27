@@ -39,8 +39,8 @@ COMMANDS = {
             'flag': 'directory',
             'help': 'Directory with raw cubes downloaded via the `fetch` command'
         }, {
-            'flag': '--keys-directory',
-            'help': 'Directory where JSON files of key description are'
+            'flag': '--attributes',
+            'help': 'Directory where JSON files of attribute descriptions are'
         })
     },
     'build_markdown': {
