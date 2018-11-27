@@ -43,7 +43,7 @@ COMMANDS = {
             'help': 'Directory where JSON files of key description are'
         })
     },
-    'build_jekyll': {
+    'build_markdown': {
         'args': ({
             'flag': 'schema',
             'help': 'JSON file from `build_schema` output'

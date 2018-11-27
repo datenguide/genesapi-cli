@@ -1,5 +1,5 @@
 """
-build jekyll frontmatter markdown files for schema keys
+build frontmatter markdown files for schema attributes (e.g. for jekyll)
 """
 
 
