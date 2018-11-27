@@ -71,8 +71,8 @@ def main(args):
                 'source': json.loads(data['statistic']),
                 'args': {}
             }
-            if args.keys_directory:
-                fp = os.path.join(args.keys_directory, '%s.json' % root)
+            if args.attributes:
+                fp = os.path.join(args.attributes, '%s.json' % root)
                 if os.path.isfile(fp):
                     with open(fp) as f:
                         desc = json.load(f)
@@ -84,8 +84,8 @@ def main(args):
                 'description': None,
                 'values': []
             }
-            if args.keys_directory:
-                fp = os.path.join(args.keys_directory, '%s.json' % data['dimension'])
+            if args.attributes:
+                fp = os.path.join(args.attributes, '%s.json' % data['dimension'])
                 if os.path.isfile(fp):
                     with open(fp) as f:
                         desc = json.load(f)
