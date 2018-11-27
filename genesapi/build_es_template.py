@@ -17,8 +17,6 @@ def _get_template(schema, args):
         for field in set(f for v in schema.values() for f in v.get('args', {}).keys()
                          | set(['id', 'year', 'nuts_level']))
     }
-    if args.fulltext:
-        mapping['fulltext_suggest'] = {'type': 'completion'}
     return {
         'index_patterns': [args.index],
         'mappings': {

@@ -57,11 +57,6 @@ COMMANDS = {
             'flag': 'schema',
             'help': 'JSON file from `build_schema` output'
         }, {
-            'flag': '--fulltext',
-            'help': 'Add a completion field for fulltext suggestions',
-            'action': 'store_true',
-            'default': False
-        }, {
             'flag': '--index',
             'help': 'Name of elasticsearch index',
             'default': 'genesapi'
@@ -86,70 +81,7 @@ COMMANDS = {
             'help': 'Output directory. If none, print each record per line to stdout'
         }, {
             'flag': '--pretty',
-            'help': 'Print pretty indented json',
-            'action': 'store_true',
-            'default': False
-        }, {
-            'flag': '--fulltext',
-            'help': 'Create computed string for fulltext search for each fact',
-            'action': 'store_true',
-            'default': False
-        }, {
-            'flag': '--schema',
-            'help': 'When using `--fulltext`, use this JSON file from `build_schema` output'
-        }, {
-            'flag': '--names',
-            'help': 'When using `--fulltext`, obtain names from this json {id => name} mapping',
-        })
-    },
-    'sync_extra_facts': {
-        'args': ({
-            'flag': 'source',
-            'help': 'CSV File with extra data'
-        }, {
-            'flag': 'schema',
-            'help': 'JSON File with schema from `build_schema`'
-        }, {
-            'flag': '--overwrite-schema',
-            'help': 'Overwrite existing keys in schema',
-            'action': 'store_true',
-            'default': False
-        }, {
-            'flag': '--host',
-            'help': 'Elasticsearch host:port',
-            'default': 'localhost:9200'
-        }, {
-            'flag': '--index',
-            'help': 'Name of elasticsearch index',
-            'default': 'genesapi'
-        }, {
-            'flag': '--quiet',
-            'help': 'Don\'t raise exceptions from elasticsearch client',
-            'action': 'store_true',
-            'default': False
-        }, {
-            'flag': '--jobs',
-            'help': 'Thread count for `parallel_bulk`',
-            'type': int,
-            'default': 4
-        }, {
-            'flag': '--queue-size',
-            'help': 'Queue size for `parallel_bulk`',
-            'type': int,
-            'default': 4
-        }, {
-            'flag': '--chunk-size',
-            'help': 'Number of documents per chunk',
-            'type': int,
-            'default': 1000
-        }, {
-            'flag': '--chunk-bytes',
-            'help': 'Maximum bytes per chunk',
-            'type': int,
-            'default': 512000000
-        }, {
-            'flag': '--stop-on-error',
-            'help': 'Stop indexing process if 1 fact could not be indexed',
+            'help': 'Print pretty indented json (for debugging purposes)',
             'action': 'store_true',
             'default': False
         })

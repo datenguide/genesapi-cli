@@ -140,39 +140,3 @@ def serialize_fact(fact, cube_name=None):
 
 def clean_description(raw):
     return re.sub('.(\\n).', lambda x: x.group(0).replace('\n', ' '), re.sub('<.*?>', '', raw or '')).strip()
-
-
-alnum_pattern = re.compile('[\W_]+', re.UNICODE)
-
-
-def remove_punctuation(value):
-    return alnum_pattern.sub(' ', value or '')
-
-
-def get_fulltext_parts(fact, schema, names):
-    schemas = {k: schema[k] for k in fact.keys() if k in schema}
-    args = [(k, v) for k, v in fact.items() if k not in tuple(schema.keys()) + META_KEYS]
-    parts = [names.get(fact['id']), fact.get('year'), fact['id']]
-    for part in parts:
-        if part:
-            yield part
-    for k, info in schemas.items():
-        name = remove_punctuation(info.get('name'))
-        if name:
-            for n in name.split():
-                yield n
-        source = remove_punctuation(info.get('source', {}).get('title_de'))
-        if source:
-            for s in source.split():
-                yield s
-        for arg, value in args:
-            arg_info = info.get('args', {}).get(arg)
-            if arg_info:
-                arg_name = remove_punctuation(arg_info.get('name'))
-                if arg_name:
-                    for a in arg_name.split():
-                        yield a
-                value = [v.get('name') for v in arg_info.get('values', []) if v['value'] == value]
-                if len(value) and value[0]:
-                    for v in remove_punctuation(value[0]).split():
-                        yield v
