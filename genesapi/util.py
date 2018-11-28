@@ -93,6 +93,7 @@ def cube_serializer(value):
 
 GENESIS_REGIONS = ('dinsg', 'dland', 'regbez', 'kreise', 'gemein')
 META_KEYS = GENESIS_REGIONS + ('stag', 'date', 'jahr', 'year', 'id', 'fact_id', 'nuts_level', 'cube')
+EXCLUDE_KEYS = GENESIS_REGIONS + ('stag', 'jahr')
 
 
 def slugify_graphql(value, to_lower=True):
@@ -134,7 +135,7 @@ def serialize_fact(fact, cube_name=None):
         fact['year'] = fact['JAHR']['value']
     fact = {k.upper() if k.lower() not in META_KEYS else k.lower():
             slugify_graphql(v, False) if k not in META_KEYS else v
-            for k, v in fact.items()}
+            for k, v in fact.items() if k.lower() not in EXCLUDE_KEYS}
     return json.loads(json.dumps(fact, default=time_to_json))
 
 
