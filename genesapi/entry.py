@@ -40,7 +40,7 @@ COMMANDS = {
             'help': 'Directory with raw cubes downloaded via the `fetch` command'
         }, {
             'flag': '--attributes',
-            'help': 'Directory where JSON files of attribute descriptions are'
+            'help': 'Directory where JSON files of attribute descriptions are stored'
         })
     },
     'build_markdown': {
