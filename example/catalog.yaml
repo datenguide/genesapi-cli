@@ -1,0 +1,13 @@
+name: Regionalstatistik
+url: https://www.regionalstatistik.de/
+username:
+password:
+export_url: https://www.regionalstatistik.de/genesisws/services/ExportService_2010?wsdl
+index_url: https://www.regionalstatistik.de/genesisws/services/RechercheService_2010?wsdl
+
+# name: Genesis
+# url: https://www-genesis.destatis.de
+# username:
+# password:
+# export_url: https://www-genesis.destatis.de/genesisWS/services/ExportService_2010?wsdl
+# index_url: https://www-genesis.destatis.de/genesisWS/services/RechercheService_2010?wsdl

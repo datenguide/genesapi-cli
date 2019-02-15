@@ -6,107 +6,85 @@ from importlib import import_module
 
 
 COMMANDS = {
-    'clean': {
+    'fetch': {
         'args': ({
-            'flag': 'source',
-            'help': 'CSV File or directory containing files (subdirectories will be included)'
+            'flag': 'catalog',
+            'help': 'YAML file with regensis catalog config'
         }, {
-            'flag': 'defaults',
-            'help': 'YAML File with default transform specification'
+            'flag': 'output',
+            'help': 'Directory where to store cube data'
         }, {
-            'flag': '--yaml',
-            'help': 'YAML File with transform specification'
-        }, {
-            'flag': '--yaml-dir',
-            'help': 'Look for yaml specifications in this directory (subdirectories will be included)'
-        }, {
-            'flag': '--target-dir',
-            'help': 'Directory where to put cleaned csv files into'
-        }, {
-            'flag': '--head',
-            'type': int,
-            'help': 'Print only this amount of lines for testing purposes'
-        }, {
-            'flag': '--dtypes',
-            'help': 'JSON file where to output dtypes metadata for keys'
+            'flag': '--replace',
+            'help': 'Replace existing (previously downloaded) cubes',
+            'action': 'store_true',
+            'default': False
         })
     },
-    'transform': {
+    'fetch_attributes': {
         'args': ({
-            'flag': 'source',
-            'help': 'CSV File or directory containing cleaned files (subdirectories will be included)'
+            'flag': 'catalog',
+            'help': 'YAML file with catalog config'
         }, {
-            'flag': '--dtypes',
-            'help': 'JSON file with dtypes metadata for keys'
+            'flag': 'output',
+            'help': 'Directory where to store attributes data'
         }, {
-            'flag': '--head',
-            'type': int,
-            'help': 'Print only this amount of lines for testing purposes'
+            'flag': '--replace',
+            'help': 'Replace existing (previously downloaded) attributes',
+            'action': 'store_true',
+            'default': False
         })
     },
-    'build_tree': {
+    'build_schema': {
         'args': ({
-            'flag': 'source',
-            'help': 'CSV file of the transformed path data'
+            'flag': 'directory',
+            'help': 'Directory with raw cubes downloaded via the `fetch` command'
         }, {
-            'flag': 'key_tree',
-            'help': 'JSON file to output keys tree to'
-        }, {
-            'flag': '--split',
-            'help': 'Split trees by id and save them as JSON to this directory'
-        }, {
-            'flag': '--fix',
-            'help': 'YAML file with data fixes, currently only works without `--split` option'
+            'flag': '--attributes',
+            'help': 'Directory where JSON files of attribute descriptions are stored'
         })
     },
-    'sync_elasticsearch': {
+    'build_markdown': {
         'args': ({
-            'flag': 'source',
-            'help': 'JSON tree file our directory containing trees'
+            'flag': 'schema',
+            'help': 'JSON file from `build_schema` output'
         }, {
-            'flag': '--host',
-            'help': 'Elasticsearch host:port',
-            'default': 'localhost:9200'
+            'flag': 'output',
+            'help': 'Output directory.'
+        })
+    },
+    'build_es_template': {
+        'args': ({
+            'flag': 'schema',
+            'help': 'JSON file from `build_schema` output'
         }, {
             'flag': '--index',
             'help': 'Name of elasticsearch index',
             'default': 'genesapi'
         }, {
-            'flag': '--overwrite',
-            'help': 'Overwrite existing index',
-            'action': 'store_true'
-        }, {
-            'flag': '--quiet',
-            'help': 'Don\'t raise exceptions from elasticsearch client',
-            'action': 'store_true',
-            'default': False
-        }, {
-            'flag': '--jobs',
-            'help': 'Thread count for `parallel_bulk`',
+            'flag': '--shards',
+            'help': 'Number of shards for elasticsearch index',
             'type': int,
-            'default': 8
+            'default': 5
         }, {
-            'flag': '--queue-size',
-            'help': 'Queue size for `parallel_bulk`',
+            'flag': '--replicas',
+            'help': 'Number of replicas for elasticsearch index',
             'type': int,
-            'default': 8
-        }, {
-            'flag': '--chunk-size',
-            'help': 'Number of documents per chunk',
-            'type': int,
-            'default': 100
-        }, {
-            'flag': '--chunk-bytes',
-            'help': 'Maximum bytes per chunk',
-            'type': int,
-            'default': 512000000
+            'default': 0
         })
     },
-    'build_keys': {
+    'jsonify': {
         'args': ({
-            'flag': 'source',
-            'help': 'Directory where keys json are, including subdirectories'
-        },)
+            'flag': 'directory',
+            'help': 'Directory with raw cubes downloaded via the `fetch` command'
+        }, {
+            'flag': '--output',
+            'help': 'Output directory. If none, print each record per line to stdout'
+        }, {
+            'flag': '--pretty',
+            'help': 'Print pretty indented json (for debugging purposes)',
+            'action': 'store_true',
+            'default': False
+        })
     }
 }
 

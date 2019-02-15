@@ -8,7 +8,7 @@ def readme():
 
 setup(
     name='genesapi_pipeline',
-    version='0.0.1alpha',
+    version='0.9',
     description='The data pipeline to turn tables from GENESIS into a graphql api',
     long_description=readme(),
     classifiers=[
@@ -32,10 +32,16 @@ setup(
         ]
     },
     install_requires=[
-        'elasticsearch',
         'pandas',
         'pyyaml',
-        'awesome-slugify'
+        'python-frontmatter',
+        'awesome-slugify',
+        'zeep',
+        'regenesis'
     ],
+    # FIXME see README.md about regenesis install note
+    # dependency_links=[
+    #     'https://github.com/datenguide/regenesis/tarball/master#egg=regenesis-0.1'
+    # ],
     zip_safe=False
 )
