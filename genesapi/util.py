@@ -92,7 +92,7 @@ def cube_serializer(value):
 
 
 GENESIS_REGIONS = ('dinsg', 'dland', 'regbez', 'kreise', 'gemein')
-META_KEYS = GENESIS_REGIONS + ('stag', 'date', 'jahr', 'year', 'id', 'fact_id', 'nuts_level', 'cube')
+META_KEYS = GENESIS_REGIONS + ('stag', 'date', 'jahr', 'year', 'region_id', 'fact_id', 'nuts', 'cube')
 EXCLUDE_KEYS = GENESIS_REGIONS + ('stag', 'jahr')
 
 
@@ -110,7 +110,7 @@ def compute_fact_id(fact):
     """because the `fact_id` generated in `regenesis.cube` is not unique"""
     parts = []
     for key, value in fact.items():
-        if key.lower() not in META_KEYS or key.lower() in ('id', 'date', 'year', 'cube'):
+        if key.lower() not in META_KEYS or key.lower() in ('region_id', 'date', 'year', 'cube'):
             if isinstance(value, dict):
                 value = value['value']
             parts.append('%s:%s' % (key, value))
@@ -124,8 +124,11 @@ def serialize_fact(fact, cube_name=None):
         fact['cube'] = cube_name
     for nuts, key in enumerate(GENESIS_REGIONS):
         if fact.get(key.upper()):
-            fact['id'] = fact.get(key.upper())
-            fact['nuts_level'] = nuts if nuts < 4 else None
+            fact['region_id'] = fact.get(key.upper())
+            if nuts < 4:
+                fact['nuts'] = nuts
+            else:
+                fact['lau'] = 2
             break
     if 'STAG' in fact:
         date = datetime.strptime(fact['STAG']['value'], '%d.%m.%Y').date()
