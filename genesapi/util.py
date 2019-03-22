@@ -92,7 +92,7 @@ def cube_serializer(value):
 
 
 GENESIS_REGIONS = ('dinsg', 'dland', 'regbez', 'kreise', 'gemein')
-META_KEYS = GENESIS_REGIONS + ('stag', 'date', 'jahr', 'year', 'region_id', 'fact_id', 'nuts', 'cube')
+META_KEYS = GENESIS_REGIONS + ('stag', 'date', 'jahr', 'year', 'region_id', 'fact_id', 'nuts', 'lau', 'cube')
 EXCLUDE_KEYS = GENESIS_REGIONS + ('stag', 'jahr')
 
 
