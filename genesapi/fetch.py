@@ -1,39 +1,26 @@
 """
-download raw cubes, based on https://github.com/pudo/regenesis
+download raw cubes, see `genesapi.storage` for details
 """
 
 
 import logging
-import os
-import yaml
 
-from regenesis.retrieve import fetch_index, fetch_cube
+from genesapi.exceptions import StorageDoesNotExist
+from genesapi.storage import Storage
 
 
 logger = logging.getLogger(__name__)
 
 
 def main(args):
-    with open(args.catalog) as f:
-        catalog = yaml.load(f)
-
-    if not os.path.isdir(args.output):
-        raise FileNotFoundError('`%s is not a valid output`' % args.output)
-
-    logger.log(logging.INFO, 'Obtaining index from `%s` ...' % catalog['index_url'])
-    for name in fetch_index(catalog):
-        fp = os.path.join(args.output, '%s.csv' % name)
-        exists = os.path.isfile(fp)
-        if exists and not args.replace:
-            logger.log(logging.INFO, 'Cube `%s` already exists, skipping ...' % name)
+    try:
+        storage = Storage(args.storage)
+    except StorageDoesNotExist:
+        if args.new:
+            storage = Storage.create(args.storage)
         else:
-            if exists and args.replace:
-                logger.log(logging.INFO, 'Cube `%s` already exists, replacing ...' % name)
-            logger.log(logging.INFO, 'Downloading `%s` from `%s` ...' % (name, catalog['export_url']))
-            cube = fetch_cube(catalog, name)
-            if cube:
-                with open(fp, 'w') as f:
-                    f.write(cube)
-                logger.log(logging.INFO, 'Saved `%s` to `%s`' % (name, fp))
-            else:
-                logger.log(logging.ERROR, 'No cube data for `%s`' % name)
+            raise StorageDoesNotExist('Storage does not exist at `%s`. If you want to create it, use the --new flag.')
+
+    logger.log(logging.INFO, 'Starting download / update for Storage `%s` ...' % args.storage)
+    storage.download(prefix=args.prefix)
+    logger.log(logging.INFO, 'Finished download / update for Storage `%s`' % args.storage)

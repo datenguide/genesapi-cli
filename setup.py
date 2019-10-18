@@ -37,7 +37,8 @@ setup(
         'python-frontmatter',
         'awesome-slugify',
         'zeep',
-        'regenesis'
+        'regenesis',
+        'python-dateutil'
     ],
     # FIXME see README.md about regenesis install note
     # dependency_links=[

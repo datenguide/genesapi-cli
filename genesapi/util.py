@@ -1,10 +1,12 @@
 import json
 import os
 import re
+import dateutil.parser
 
 from datetime import datetime
 from multiprocessing import Pool, cpu_count
 from slugify import slugify_de
+from time import strptime
 from regenesis.cube import Cube
 from regenesis.util import make_key
 
@@ -22,10 +24,10 @@ def get_chunks(iterable, n=CPUS):
     chunk_size = int(total / n)
     chunks = []
     for i in range(n):
-        if not i+1 == n:
-            chunks.append(iterable[i*chunk_size:(i+1)*chunk_size])
+        if not i + 1 == n:
+            chunks.append(iterable[i * chunk_size:(i + 1) * chunk_size])
         else:
-            chunks.append(iterable[i*chunk_size:])
+            chunks.append(iterable[i * chunk_size:])
     return chunks
 
 
@@ -44,7 +46,7 @@ def parallelize(func, iterable, *args):
     chunks = get_chunks(iterable, CPUS)
 
     if args:
-        _args = ([a]*CPUS for a in args)
+        _args = ([a] * CPUS for a in args)
         with Pool(processes=CPUS) as P:
             res = P.starmap(func, zip(chunks, *_args))
     else:
@@ -144,3 +146,29 @@ def serialize_fact(fact, cube_name=None):
 
 def clean_description(raw):
     return re.sub('.(\\n).', lambda x: x.group(0).replace('\n', ' '), re.sub('<.*?>', '', raw or '')).strip()
+
+
+def get_value_from_file(fp, default=None, transform=lambda x: x):
+    if os.path.exists(fp):
+        with open(fp) as f:
+            return transform(f.read().strip())
+    return default
+
+
+def to_date(value, force_ws=False):
+    if not force_ws:
+        try:
+            return dateutil.parser.parse(value)
+        except ValueError:
+            pass
+    # date format in webservice:
+    # 07.08.2019 08:40:20h (but the "h" at the end is optional -.- )
+    return datetime(*strptime(value.rstrip('h'), '%d.%m.%Y %H:%M:%S')[:6])
+
+
+iso_regex = re.compile(
+    '^(-?(?:[1-9][0-9]*)?[0-9]{4})-(1[0-2]|0[1-9])-(3[01]|0[1-9]|[12][0-9])T(2[0-3]|[01][0-9]):([0-5][0-9]):([0-5][0-9])(.[0-9]+)?(Z)?$')  # noqa
+
+
+def is_isoformat(value):
+    return bool(iso_regex.match(value))

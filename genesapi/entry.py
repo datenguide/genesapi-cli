@@ -8,16 +8,15 @@ from importlib import import_module
 COMMANDS = {
     'fetch': {
         'args': ({
-            'flag': 'catalog',
-            'help': 'YAML file with regensis catalog config'
-        }, {
-            'flag': 'output',
+            'flag': 'storage',
             'help': 'Directory where to store cube data'
         }, {
-            'flag': '--replace',
-            'help': 'Replace existing (previously downloaded) cubes',
-            'action': 'store_true',
-            'default': False
+            'flag': '--new',
+            'help': 'Initialize Storage if it doesn\'t exist and start downloading',
+            'action': 'store_true'
+        }, {
+            'flag': '--prefix',
+            'help': 'Prefix of cube names to restrict downloading, e.g. "111"'
         })
     },
     'fetch_attributes': {

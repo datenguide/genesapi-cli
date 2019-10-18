@@ -61,7 +61,7 @@ Documentation](#full-documentation) if you need to understand whats going on exa
 Before *really executing* this, read at least the notes below this list.
 
     mkdir ./data/{cubes,attributes}
-    genesapi fetch catalog.yml ./data/cubes/
+    CATALOG=catalog.yml genesapi fetch ./data/cubes/
     genesapi fetch_attributes catalog.yml ./data/attributes/
     genesapi build_schema ./data/cubes/ --attributes ./data/attributes/ > schema.json
     genesapi build_es_template ./schema.json > template.json
@@ -128,24 +128,39 @@ Download csv data (aka *cubes*) from a *GENESIS* instance like
 [www.regionalstatistik.de](https://www.regionalstatistik.de) and store them
 somewhere in the local filesystem.
 
+Cubes are stored as *Revisions*, if a cube is updated the old one will still
+be present in the file system. The `fetch` command as well stores some meta
+information about the downloading process in the given directory.
+
 Create a *catalog* in `YAML` format, see `example/catalog.yml` for details
-(basically, just put in your credentials)
+(basically, just put in your credentials) and use this path as environment
+variable `CATALOG`
 
 ```
-usage: genesapi fetch [-h] [--replace] catalog output
+usage: genesapi fetch [-h] [--new] [--prefix PREFIX] storage
 
 positional arguments:
-  catalog     YAML file with regensis catalog config
-  output      Directory where to store cube data
+  storage          Directory where to store cube data
 
 optional arguments:
-  -h, --help  show this help message and exit
-  --replace   Replace existing (previously downloaded) cubes
+  -h, --help       show this help message and exit
+  --new            Initialize Storage if it doesn't exist and start
+                   downloading
+  --prefix PREFIX  Prefix of cube names to restrict downloading, e.g. "111"
 ```
 
 Example:
 
-    genesapi fetch catalog.yml ./data/cubes/
+    CATALOG=catalog.yml genesapi fetch ./data/cubes/
+
+
+##### filter
+
+You can filter for a prefix of the cube names with the `--filter` option.
+
+To retrieve only cubes for the statistic id "11111":
+
+    CATALOG=catalog.yml genesapi fetch ./data/cubes/ --prefix 11111
 
 #### jsonify
 
@@ -331,3 +346,39 @@ optional arguments:
 Example:
 
     genesapi build_markdown ./data/schema.json ../path-to-my-jekyll/_posts/
+
+
+### Storage
+
+the store manages cubes data on disk, download from webservices and export
+to json facts
+
+it can be created and updated with the `fetch` command (see above)
+
+it allows partial updates (when cubes changes)
+
+every information is stored in the filesystem so there is no need for an
+extra database to keep track of the status of the cubes
+
+a `Storage` has a base directory with this layout:
+
+```
+./
+    webservice_url                  -   plain text file containing the webservice url used
+    last_updated                    -   plain text file containing date in isoformat
+    last_exported                   -   plain text file containing date in isoformat
+    logs/                           -   folder for keeping logfiles
+    11111BJ001/                     -   directory for cube name "11111BJ001"
+        last_updated                -   plain text file containing date in isoformat
+        last_exported               -   plain text file containing date in isoformat
+        current/                    -   symbolic link to the latest revision directory
+        2019-08-07T08:40:20/        -   revision directory for given date (isoformat)
+            downloaded              -   plain text file containing date in isoformat
+            exported                -   plain text file containing date in isoformat
+            meta.yml                -   original metadata from webservice in yaml format
+            data.csv                -   original csv data for this cube
+        2017-06-07T08:40:20/        -   an older revision...
+            ...
+    11111BJ002/                     -   another cube...
+        ...
+```
