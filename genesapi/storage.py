@@ -36,6 +36,7 @@ import os
 import yaml
 
 from datetime import datetime
+from regenesis.cube import Cube as RegenesisCube
 
 from genesapi.exceptions import StorageDoesNotExist, ShouldNotHappen
 from genesapi.soap_services import IndexService, ExportService
@@ -111,6 +112,11 @@ class CubeRevision(Mixin):
         os.symlink(self.name, fp)
         logger.log(logging.INFO, 'Created new revision `%s` for cube `%s`.' % (self.name, self.cube))
 
+    def load(self):
+        with open(self._path('data.csv')) as f:
+            raw = f.read().strip()
+        return RegenesisCube(self.cube.name, raw)
+
 
 class Cube(Mixin):
     def __init__(self, name, storage):
@@ -132,14 +138,6 @@ class Cube(Mixin):
         return sorted([CubeRevision(self, rev) for rev in os.listdir(self.directory) if is_isoformat(rev)],
                       key=lambda x: x.date, reverse=True)
 
-    def fetch(self):
-        if self.should_update():
-            download_metadata, cube_metadata, cube_data = ExportService.download_cube(self.name)
-            rev_name = to_date(cube_metadata['stand'], force_ws=True).isoformat()
-            revision = CubeRevision(self, rev_name)
-            revision.create(download_metadata, cube_metadata, cube_data)
-            self.touch('last_updated')
-
     def should_update(self, date=None):
         if not self.exists:
             logger.log(logging.INFO, 'Updating cube `%s` because it didn\'t exist yet ...' % self.name)
@@ -154,6 +152,24 @@ class Cube(Mixin):
             logger.log(logging.INFO, 'Cube `%s` is up to date.' % self.name)
         return should_update
 
+    def update(self, force=False):
+        if force or self.should_update():
+            download_metadata, cube_metadata, cube_data = ExportService.download_cube(self.name)
+            rev_name = to_date(cube_metadata['stand'], force_ws=True).isoformat()
+            revision = CubeRevision(self, rev_name)
+            revision.create(download_metadata, cube_metadata, cube_data)
+            self.touch('last_updated')
+
+    def should_export(self):
+        if self.last_exported:
+            return self.last_updated > self.last_exported
+        return True
+
+    def export(self, force=False):
+        if force or self.should_export():
+            self.touch('last_exported')
+            return self.current.load()
+
 
 class Storage(Mixin):
     def __init__(self, directory):
@@ -162,7 +178,7 @@ class Storage(Mixin):
                 'Storage does not exist at `%s`. If you want to create it, use `Storage.create("%s")`' %
                 (directory, directory))
         self.directory = directory
-        self.name = directory
+        self.name = 'Storage: %s' % directory
         self.loggingHandler = logging.FileHandler(self._path('logs', '%s.log' % datetime.now().isoformat()))
         self.loggingHandler.setFormatter(logging.Formatter('%(asctime)s:%(levelname)s:%(message)s'))
 
@@ -171,15 +187,19 @@ class Storage(Mixin):
             if fp != 'logs':
                 yield Cube(fp, self)
 
-    def download(self, prefix=None):
+    def update(self, prefix=None):
         logger.addHandler(self.loggingHandler)
+        self.touch('last_updated')
         if prefix:
             entries = IndexService.filter(prefix)
         else:
             entries = IndexService
         for entry in entries:
             cube = Cube(entry['code'], self)
-            cube.fetch()
+            cube.update()
+
+    def get_cubes_for_export(self):
+        return [c for c in self if c.should_export()]
 
     @property
     def webservice_url(self):

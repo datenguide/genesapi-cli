@@ -8,10 +8,9 @@ import logging
 import os
 import sys
 
+from genesapi.storage import Storage
 from genesapi.util import (
     compute_fact_id,
-    get_files,
-    load_cube,
     serialize_fact,
     parallelize
 )
@@ -47,10 +46,10 @@ def _get_facts(facts, cube_name, args):
     return res
 
 
-def _get_json_facts(files, args):
-    for i, file in enumerate(files):
-        logger.log(logging.INFO, 'Loading cube `%s` (%s of %s) ...' % (file, i+1, len(files)))
-        cube = load_cube(file)
+def _get_json_facts(cubes, args):
+    for i, cube in enumerate(cubes):
+        logger.log(logging.INFO, 'Loading cube `%s` (%s of %s) ...' % (cube, i+1, len(cubes)))
+        cube = cube.export()
         facts = parallelize(_get_facts, cube.facts, cube.name, args)
         for fact in facts:
             yield fact
@@ -61,9 +60,12 @@ def main(args):
         logger.log(logging.ERROR, 'output `%s` not valid.' % args.output)
         raise FileNotFoundError(args.output)
 
-    files = get_files(args.directory, lambda x: x.endswith('.csv'))
+    storage = Storage(args.storage)
+    cubes = storage.get_cubes_for_export()
+    storage.touch('last_exported')
+    logger.log(logging.INFO, 'Starting to serialize %s cubes from `%s` ...' % (len(cubes), storage))
 
-    facts = _get_json_facts(files, args)
+    facts = _get_json_facts(cubes, args)
 
     for fact in facts:
         if not args.output:

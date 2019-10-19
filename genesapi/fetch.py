@@ -22,5 +22,5 @@ def main(args):
             raise StorageDoesNotExist('Storage does not exist at `%s`. If you want to create it, use the --new flag.')
 
     logger.log(logging.INFO, 'Starting download / update for Storage `%s` ...' % args.storage)
-    storage.download(prefix=args.prefix)
+    storage.update(prefix=args.prefix)
     logger.log(logging.INFO, 'Finished download / update for Storage `%s`' % args.storage)

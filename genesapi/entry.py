@@ -82,7 +82,7 @@ COMMANDS = {
     },
     'jsonify': {
         'args': ({
-            'flag': 'directory',
+            'flag': 'storage',
             'help': 'Directory with raw cubes downloaded via the `fetch` command'
         }, {
             'flag': '--output',
@@ -90,8 +90,7 @@ COMMANDS = {
         }, {
             'flag': '--pretty',
             'help': 'Print pretty indented json (for debugging purposes)',
-            'action': 'store_true',
-            'default': False
+            'action': 'store_true'
         })
     }
 }

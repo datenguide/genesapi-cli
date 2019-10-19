@@ -219,7 +219,7 @@ complete Elasticsearch index (which takes a lot of time and space, too...).
 usage: genesapi jsonify [-h] [--output OUTPUT] [--pretty] directory
 
 positional arguments:
-  directory        Directory with raw cubes downloaded via the `fetch` command
+  storage          Directory with raw cubes downloaded via the `fetch` command
 
 optional arguments:
   -h, --help       show this help message and exit
