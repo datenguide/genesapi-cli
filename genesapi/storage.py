@@ -33,6 +33,7 @@ a `Storage` has a base directory with this layout:
 
 import logging
 import os
+import re
 import yaml
 
 from datetime import datetime
@@ -44,6 +45,9 @@ from genesapi.util import get_value_from_file, to_date, is_isoformat
 
 
 logger = logging.getLogger(__name__)
+
+
+CUBE_NAME_RE = re.compile(r'^\d{5}[A-Z]')  # FIXME
 
 
 class Mixin:
@@ -155,10 +159,13 @@ class Cube(Mixin):
     def update(self, force=False):
         if force or self.should_update():
             download_metadata, cube_metadata, cube_data = ExportService.download_cube(self.name)
-            rev_name = to_date(cube_metadata['stand'], force_ws=True).isoformat()
-            revision = CubeRevision(self, rev_name)
-            revision.create(download_metadata, cube_metadata, cube_data)
-            self.touch('last_updated')
+            if cube_metadata['stand'] and cube_data:
+                rev_name = to_date(cube_metadata['stand'], force_ws=True).isoformat()
+                revision = CubeRevision(self, rev_name)
+                revision.create(download_metadata, cube_metadata, cube_data)
+                self.touch('last_updated')
+            else:
+                logger.log(logging.ERROR, 'Cube `%s` seems not to be valid' % self)
 
     def should_export(self):
         if self.last_exported:
@@ -184,7 +191,7 @@ class Storage(Mixin):
 
     def __iter__(self):
         for fp in os.listdir(self.directory):
-            if fp != 'logs':
+            if CUBE_NAME_RE.match(fp):
                 yield Cube(fp, self)
 
     def update(self, prefix=None):
