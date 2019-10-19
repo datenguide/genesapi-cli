@@ -50,14 +50,14 @@ class Index(BaseService):
     def filter(self, prefix):
         logger.log(logging.INFO, 'Look up cubes with name starting with `%s` ...' % prefix)
         res = self.service(filter='%s*' % prefix, **self.kwargs)
-        if len(res.datenKatalogEintraege) == 500:
-            raise UnexpectedSoapResult('Cube list for "%s*" too long' % prefix)
         logger.log(logging.INFO, 'Found %s cubes with name starting with `%s`' %
                    (len(res.datenKatalogEintraege), prefix))
+        if len(res.datenKatalogEintraege) == 500:
+            raise UnexpectedSoapResult('Cube list for "%s*" too long' % prefix)
         return [self.to_dict(e) for e in res.datenKatalogEintraege]
 
     def __iter__(self):
-        for i in range(10, 100):
+        for i in range(100, 1000):
             for entry in self.filter(i):
                 yield entry
 

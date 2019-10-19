@@ -5,13 +5,16 @@ import dateutil.parser
 
 from datetime import datetime
 from multiprocessing import Pool, cpu_count
-from slugify import slugify_de
+from slugify import Slugify, GERMAN
 from time import strptime
 from regenesis.cube import Cube
 from regenesis.util import make_key
 
 
 CPUS = cpu_count()
+
+
+slugify_de = Slugify(pretranslate=GERMAN)
 
 
 def get_chunks(iterable, n=CPUS):
