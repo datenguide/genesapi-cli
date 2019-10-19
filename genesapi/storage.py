@@ -94,13 +94,15 @@ class CubeRevision(Mixin):
     def metadata(self):
         return get_value_from_file(self._path('meta.yml'), transform=yaml.load)
 
-    def create(self, download_metadata, cube_metadata, cube_data):
+    def create(self, download_metadata, cube_metadata, cube_data, overwrite=False):
         logger.log(logging.INFO, 'Creating new revision for cube `%s` ...' % self.cube)
-        if self.exists:
+        if overwrite:
+            logger.log(logging.INFO, '(Force updating)')
+        if self.exists and not overwrite:
             raise ShouldNotHappen(
                 'Revision "%s" for cube "%s" already exists!' %
                 (self.cube.name, self.date.isoformat()))
-        os.makedirs(self.directory)
+        os.makedirs(self.directory, exist_ok=True)
         self.touch('downloaded')
         with open(self._path('download.yml'), 'w') as f:
             f.write(yaml.dump(download_metadata, default_flow_style=False))
@@ -135,7 +137,11 @@ class Cube(Mixin):
 
     @property
     def metadata(self):
-        return get_value_from_file(self.directory, 'metadata.json', transform=yaml.load)
+        return get_value_from_file(self._path('current', 'meta.yml'), transform=yaml.load)
+
+    @property
+    def facts(self):
+        return self.current.load().facts
 
     @property
     def revisions(self):
@@ -162,7 +168,7 @@ class Cube(Mixin):
             if cube_metadata['stand'] and cube_data:
                 rev_name = to_date(cube_metadata['stand'], force_ws=True).isoformat()
                 revision = CubeRevision(self, rev_name)
-                revision.create(download_metadata, cube_metadata, cube_data)
+                revision.create(download_metadata, cube_metadata, cube_data, force)
                 self.touch('last_updated')
             else:
                 logger.log(logging.ERROR, 'Cube `%s` seems not to be valid' % self)
@@ -187,7 +193,7 @@ class Storage(Mixin):
                 'Storage does not exist at `%s`. If you want to create it, use `Storage.create("%s")`' %
                 (directory, directory))
         self.directory = directory
-        self.name = 'Storage: %s' % directory
+        self.name = directory
         self.loggingHandler = logging.FileHandler(self._path('logs', '%s.log' % datetime.now().isoformat()))
         self.loggingHandler.setFormatter(logging.Formatter('%(asctime)s:%(levelname)s:%(message)s'))
 

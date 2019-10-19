@@ -108,6 +108,18 @@ COMMANDS = {
             'help': 'Serialize cubes even if they are up to date according to the storage.',
             'action': 'store_true'
         })
+    },
+    'status': {
+        'args': ({
+            'flag': 'storage',
+            'help': 'Directory to storage'
+        }, {
+            'flag': '--host',
+            'help': 'Elastic host:port to obtain stats from'
+        }, {
+            'flag': '--index',
+            'help': 'Elastic index'
+        })
     }
 }
 

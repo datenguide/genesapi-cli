@@ -67,6 +67,7 @@ Before *really executing* this, read at least the notes below this list.
     genesapi build_es_template ./schema.json > template.json
     curl -H 'Content-Type: application/json' -XPOST http://localhost:9200/_template/genesapi -d@template.json
     genesapi jsonify cubes | logstash -f logstash.conf
+    genesapi status --host localhost:9200 --index genesapi > status.csv
 
 Its roughly about to download 1.2G from the *GENESIS* soap api. The
 Elasticsearch index well be around 25G at the end. The soap api is very slow
@@ -105,6 +106,7 @@ csv data *cubes* and transform them into a json-serializable format.
 4. [build_markdown](#build_markdown)
 5. [build_es_template](#build_es_template)
 6. [**jsonify**](#jsonify)
+7. [status](#status)
 
 For transforming csv data *cubes* to json *facts*, only `fetch` and `jsonify`
 are necessary.
@@ -346,6 +348,31 @@ optional arguments:
 Example:
 
     genesapi build_markdown ./data/schema.json ../path-to-my-jekyll/_posts/
+
+
+#### status
+
+Obtain metadata for cubes in the storage like last downloaded, last exported,
+number of facts...
+
+Optionally retrieve the number of facts for each cube from elasticsearch to
+compare.
+
+```
+usage: genesapi status [-h] [--host HOST] [--index INDEX] storage
+
+positional arguments:
+  storage        Directory to storage
+
+optional arguments:
+  -h, --help     show this help message and exit
+  --host HOST    Elastic host:port to obtain stats from
+  --index INDEX  Elastic index
+```
+
+Example:
+
+    genesapi status regionalstatistik --host localhost:9200 --index genesapi > status.csv
 
 
 ### Storage

@@ -38,7 +38,8 @@ setup(
         'awesome-slugify',
         'zeep',
         'regenesis',
-        'python-dateutil'
+        'python-dateutil',
+        'elasticsearch'
     ],
     # FIXME see README.md about regenesis install note
     # dependency_links=[
