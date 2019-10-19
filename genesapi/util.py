@@ -7,7 +7,6 @@ from datetime import datetime
 from multiprocessing import Pool, cpu_count
 from slugify import Slugify, GERMAN
 from time import strptime
-from regenesis.cube import Cube
 from regenesis.util import make_key
 
 
@@ -59,24 +58,8 @@ def parallelize(func, iterable, *args):
     return (i for r in res for i in r)
 
 
-def get_files(directory, condition=lambda x: True):
-    """
-    return list of files in given `directory`
-    that match `condition` (default: all) incl. subdirectories
-    """
-    return [os.path.join(d, f) for d, _, fnames in os.walk(directory)
-            for f in fnames if condition(f)]
-
-
 def slugify(value, to_lower=True, separator='-'):
     return slugify_de(value, to_lower=to_lower, separator=separator)
-
-
-def load_cube(fp):
-    name = os.path.splitext(os.path.split(fp)[1])[0]
-    with open(fp) as f:
-        raw = f.read().strip()
-    return Cube(name, raw)
 
 
 def time_to_json(value):

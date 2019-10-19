@@ -9,11 +9,10 @@ import logging
 import os
 import sys
 
+from genesapi.storage import Storage
 from genesapi.util import (
-    load_cube,
-    get_files,
     META_KEYS,
-    parallelize,
+    # parallelize,
     slugify_graphql,
     time_to_json,
     clean_description
@@ -23,11 +22,11 @@ from genesapi.util import (
 logger = logging.getLogger(__name__)
 
 
-def _get_schema(files):
+def _get_schema(cubes):
     res = []
-    cubes = (load_cube(fp) for fp in files)
     for cube in cubes:
         logger.log(logging.INFO, 'Loading `%s` ...' % cube.name)
+        cube = cube.current.load()
         roots = [v for k, v in cube.dimensions.items() if k.lower() not in META_KEYS and not v.values]
         excludes = tuple([r.name.lower() for r in roots]) + META_KEYS
         statistic = json.dumps(cube.metadata['statistic'], default=time_to_json)
@@ -43,14 +42,11 @@ def _get_schema(files):
 
 
 def main(args):
-    directory = args.directory
-    files = []
-    if os.path.isdir(directory):
-        files = get_files(directory, lambda x: x.endswith('.csv'))
-    else:
-        logger.log(logging.ERROR, 'data source `%s` not valid.' % directory)
-
-    data = parallelize(_get_schema, files)
+    storage = Storage(args.directory)
+    cubes = [c for c in storage]
+    # FIXME
+    # data = parallelize(_get_schema, cubes)
+    data = _get_schema(cubes)
     columns = ['root', 'root_name', 'dimension', 'dimension_name', 'value', 'value_name', 'statistic']
     df = pd.DataFrame(
         data,

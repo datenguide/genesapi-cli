@@ -20,9 +20,7 @@ def _get_template(schema, args):
     return {
         'index_patterns': [args.index],
         'mappings': {
-            'doc': {
-                'properties': mapping
-            }
+            'properties': mapping
         },
         'settings': {
             'index.mapping.total_fields.limit': 100000,

@@ -65,8 +65,9 @@ def main(args):
     storage.touch('last_exported')
     logger.log(logging.INFO, 'Starting to serialize %s cubes from `%s` ...' % (len(cubes), storage))
 
-    facts = _get_json_facts(cubes, args)
-
-    for fact in facts:
-        if not args.output:
-            sys.stdout.write(fact + '\n')
+    if len(cubes) == 0:
+        logger.log(logging.INFO, 'Everything seems up to date.')
+    else:
+        for fact in _get_json_facts(cubes, args):
+            if not args.output:
+                sys.stdout.write(fact + '\n')
