@@ -82,6 +82,7 @@ def cube_serializer(value):
 GENESIS_REGIONS = ('dinsg', 'dland', 'regbez', 'kreise', 'gemein')
 META_KEYS = GENESIS_REGIONS + ('stag', 'date', 'jahr', 'year', 'region_id', 'fact_id', 'nuts', 'lau', 'cube')
 EXCLUDE_KEYS = GENESIS_REGIONS + ('stag', 'jahr')
+EXCLUDE_FACT_ID_KEYS = set(META_KEYS) - set(('region_id', 'date', 'year'))
 
 
 def slugify_graphql(value, to_lower=True):
@@ -95,12 +96,17 @@ def slugify_graphql(value, to_lower=True):
 
 
 def compute_fact_id(fact):
-    """because the `fact_id` generated in `regenesis.cube` is not unique"""
+    """
+    create an id that describes the unique combination of dimensions for a fact
+    needed for elasticsearch doc_id and for de-duplication
+    """
+    # FIXME make sure this is really working as expected  xD
+
     parts = []
     for key, value in fact.items():
-        if key.lower() not in META_KEYS or key.lower() in ('region_id', 'date', 'year', 'cube'):
+        if key.lower() not in EXCLUDE_FACT_ID_KEYS:
             if isinstance(value, dict):
-                value = value['value']
+                value = ''  # the actual value is not an indicator for uniqueness
             parts.append('%s:%s' % (key, value))
     return make_key(sorted(parts))
 
