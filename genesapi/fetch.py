@@ -24,5 +24,5 @@ def main(args):
                 args.storage)
 
     logger.log(logging.INFO, 'Starting download / update for Storage `%s` ...' % args.storage)
-    storage.update(prefix=args.prefix)
+    storage.update(prefix=args.prefix, force=args.force_update)
     logger.log(logging.INFO, 'Finished download / update for Storage `%s`' % args.storage)

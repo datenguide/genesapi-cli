@@ -49,7 +49,7 @@ def _get_facts(facts, cube_name, args):
 def _get_json_facts(cubes, args):
     for i, cube in enumerate(cubes):
         logger.log(logging.INFO, 'Loading cube `%s` (%s of %s) ...' % (cube, i+1, len(cubes)))
-        cube = cube.export()
+        cube = cube.export(args.force_export)
         facts = parallelize(_get_facts, cube.facts, cube.name, args)
         for fact in facts:
             yield fact
@@ -61,13 +61,17 @@ def main(args):
         raise FileNotFoundError(args.output)
 
     storage = Storage(args.storage)
-    cubes = storage.get_cubes_for_export()
-    storage.touch('last_exported')
+    cubes = storage.get_cubes_for_export(args.force_export)
     logger.log(logging.INFO, 'Starting to serialize %s cubes from `%s` ...' % (len(cubes), storage))
 
+    i = 0
     if len(cubes) == 0:
         logger.log(logging.INFO, 'Everything seems up to date.')
     else:
         for fact in _get_json_facts(cubes, args):
             if not args.output:
                 sys.stdout.write(fact + '\n')
+            i += 1
+    storage.touch('last_exported')
+    logger.log(logging.INFO, 'Serialized %s facts.' % i)
+    logger.log(logging.INFO, 'Finished serialize %s cubes from `%s` .' % (len(cubes), storage))

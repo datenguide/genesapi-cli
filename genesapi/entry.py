@@ -17,6 +17,14 @@ COMMANDS = {
         }, {
             'flag': '--prefix',
             'help': 'Prefix of cube names to restrict downloading, e.g. "111"'
+        }, {
+            'flag': '--cronjob',
+            'help': 'Indicate that this execution is run as a cronjob (for logging behaviour)',
+            'action': 'store_true'
+        }, {
+            'flag': '--force-update',
+            'help': 'Re-download all cubes regardless if they are already up to date.',
+            'action': 'store_true'
         })
     },
     'fetch_attributes': {
@@ -90,6 +98,14 @@ COMMANDS = {
         }, {
             'flag': '--pretty',
             'help': 'Print pretty indented json (for debugging purposes)',
+            'action': 'store_true'
+        }, {
+            'flag': '--cronjob',
+            'help': 'Indicate that this execution is run as a cronjob (for logging behaviour)',
+            'action': 'store_true'
+        }, {
+            'flag': '--force-export',
+            'help': 'Serialize cubes even if they are up to date according to the storage.',
             'action': 'store_true'
         })
     }

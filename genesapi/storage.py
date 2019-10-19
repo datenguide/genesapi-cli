@@ -167,7 +167,9 @@ class Cube(Mixin):
             else:
                 logger.log(logging.ERROR, 'Cube `%s` seems not to be valid' % self)
 
-    def should_export(self):
+    def should_export(self, force=False):
+        if force:
+            return True
         if self.last_exported:
             return self.last_updated > self.last_exported
         return True
@@ -194,19 +196,19 @@ class Storage(Mixin):
             if CUBE_NAME_RE.match(fp):
                 yield Cube(fp, self)
 
-    def update(self, prefix=None):
+    def update(self, prefix=None, force=False):
         logger.addHandler(self.loggingHandler)
-        self.touch('last_updated')
         if prefix:
             entries = IndexService.filter(prefix)
         else:
             entries = IndexService
         for entry in entries:
             cube = Cube(entry['code'], self)
-            cube.update()
+            cube.update(force)
+        self.touch('last_updated')
 
-    def get_cubes_for_export(self):
-        return [c for c in self if c.should_export()]
+    def get_cubes_for_export(self, force=False):
+        return [c for c in self if c.should_export(force)]
 
     @property
     def webservice_url(self):

@@ -18,7 +18,7 @@ def _get_template(schema, args):
                          | set(['region_id', 'year', 'nuts', 'lau']))
     }
     return {
-        'index_patterns': [args.index],
+        'index_patterns': ['%s-*' % args.index],
         'mappings': {
             'properties': mapping
         },
