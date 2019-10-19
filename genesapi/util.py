@@ -130,6 +130,9 @@ def serialize_fact(fact, cube_name=None):
         fact['year'] = str(date.year)
     if 'JAHR' in fact:
         fact['year'] = fact['JAHR']['value']
+    # for easier time based analysis:
+    if 'date' not in fact and 'year' in fact:
+        fact['date'] = datetime(int(fact['year']), 12, 31).date()
     fact = {k.upper() if k.lower() not in META_KEYS else k.lower():
             slugify_graphql(v, False) if k not in META_KEYS else v
             for k, v in fact.items() if k.lower() not in EXCLUDE_KEYS}
