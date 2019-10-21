@@ -41,7 +41,7 @@ from regenesis.cube import Cube as RegenesisCube
 
 from genesapi.exceptions import StorageDoesNotExist, ShouldNotHappen
 from genesapi.soap_services import IndexService, ExportService
-from genesapi.util import get_value_from_file, to_date, is_isoformat
+from genesapi.util import cached_property, get_value_from_file, to_date, is_isoformat
 
 
 logger = logging.getLogger(__name__)
@@ -51,11 +51,11 @@ CUBE_NAME_RE = re.compile(r'^\d{5}[A-Z]')  # FIXME
 
 
 class Mixin:
-    @property
+    @cached_property
     def last_exported(self):
         return get_value_from_file(self._path('last_exported'), transform=to_date)
 
-    @property
+    @cached_property
     def last_updated(self):
         return get_value_from_file(self._path('last_updated'), transform=to_date)
 
@@ -82,15 +82,15 @@ class CubeRevision(Mixin):
         self.directory = os.path.join(cube.directory, name)
         self.exists = os.path.exists(self.directory)
 
-    @property
+    @cached_property
     def downloaded(self):
         return get_value_from_file(self._path('downloaded'), transform=to_date)
 
-    @property
+    @cached_property
     def exported(self):
         return get_value_from_file(self._path('downloaded'), transform=to_date)
 
-    @property
+    @cached_property
     def metadata(self):
         return get_value_from_file(self._path('meta.yml'), transform=yaml.load)
 
@@ -131,19 +131,30 @@ class Cube(Mixin):
         self.directory = storage._path(name)
         self.exists = os.path.exists(self.directory)
 
-    @property
+    def __iter__(self):
+        for fact in self.facts:
+            yield fact
+
+    def __len__(self):
+        return len(self.facts)
+
+    @cached_property
     def current(self):
         return self.revisions[0]
 
-    @property
+    @cached_property
     def metadata(self):
         return get_value_from_file(self._path('current', 'meta.yml'), transform=yaml.load)
 
-    @property
+    @cached_property
     def facts(self):
-        return self.current.load().facts
+        return self._cube.facts
 
-    @property
+    @cached_property
+    def dimensions(self):
+        return self._cube.dimensions
+
+    @cached_property
     def revisions(self):
         return sorted([CubeRevision(self, rev) for rev in os.listdir(self.directory) if is_isoformat(rev)],
                       key=lambda x: x.date, reverse=True)
@@ -185,6 +196,12 @@ class Cube(Mixin):
             self.touch('last_exported')
             return self.current.load()
 
+    @cached_property
+    def _cube(self):
+        if self.exists:
+            return self.current.load()
+        raise ShouldNotHappen('Use this property only if you know this cube exists')
+
 
 class Storage(Mixin):
     def __init__(self, directory):
@@ -202,6 +219,9 @@ class Storage(Mixin):
             if CUBE_NAME_RE.match(fp):
                 yield Cube(fp, self)
 
+    def __len__(self):
+        return len(self.cubes)
+
     def update(self, prefix=None, force=False):
         logger.addHandler(self.loggingHandler)
         if prefix:
@@ -216,7 +236,19 @@ class Storage(Mixin):
     def get_cubes_for_export(self, force=False):
         return [c for c in self if c.should_export(force)]
 
-    @property
+    def cube(self, name):
+        if CUBE_NAME_RE.match(name):
+            return Cube(name, self)
+
+    @cached_property
+    def cubes(self):
+        return list(self)
+
+    @cached_property
+    def _cubes(self):
+        return (c._cube for c in self)
+
+    @cached_property
     def webservice_url(self):
         return get_value_from_file(self.path('webservice_url'))
 

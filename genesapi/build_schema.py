@@ -1,99 +1,132 @@
 """
-build graphql schema out of cubes from `fetch`
+build schema out of cubes
+
+
+schema layout:
+
+- statistic:
+  - attribute:
+    - dimension:
+      - value
+
+{
+  "12111": {
+    "title_de": "Zensus 2011",
+    "title_en": "2011 census",
+    "description_de": "...",
+    "valid_from": "2011-05-09T00:00:00",
+    "periodicity": "EINMALIG",
+    "name": "12111",
+    "attributes": {
+      "BEVZ20": {
+        "name": "BEVZ20",
+        "title_de": "Bevölkerung",
+        "measure_type": "W-MM",
+        "atemporal": true,
+        "meta_variable": false,
+        "valid_from": "1950-01-01T00:00:00",
+        "summable": true,
+        "title_en": "Bevölkerung",
+        "definition_de": "...",
+        "values": [],
+        "dimensions": {
+          "ALTX20": {
+            "name": "ALTX20",
+            "title_de": "Altersgruppen (unter 3 bis 75 u. m.)",
+            "measure_type": "K-SACH-MM",
+            "atemporal": false,
+            "meta_variable": false,
+            "valid_from": "1950-01-01T00:00:00",
+            "GLIED_TYP": "DAVON",
+            "STD_SORT": "FS",
+            "summable": false,
+            "title_en": "Altersgruppen (unter 3 bis 75 u. m.)",
+            "definition_de": "...",
+            "values": [
+              {
+                "title_de": "unter 3 Jahre",
+                "title_en": "unter 3 Jahre",
+                "name": "ALT000B03",
+                "dimension_name": "ALTX20",
+                "value_id": "dd25a6d4cf0a23fd750fb618196b4ad351badbbf",
+                "key": "ALT000B03"
+              },
+            ...
+
 """
 
 
 import json
-import pandas as pd
 import logging
-import os
 import sys
 
 from genesapi.storage import Storage
 from genesapi.util import (
-    META_KEYS,
-    # parallelize,
     slugify_graphql,
-    time_to_json,
-    clean_description
+    cube_serializer,
+    #     clean_description
+    GENESIS_REGIONS,
+    EXCLUDE_KEYS
 )
 
 
 logger = logging.getLogger(__name__)
 
 
-def _get_schema(cubes):
-    res = []
-    for cube in cubes:
-        logger.log(logging.INFO, 'Loading `%s` ...' % cube.name)
-        cube = cube.current.load()
-        roots = [v for k, v in cube.dimensions.items() if k.lower() not in META_KEYS and not v.values]
-        excludes = tuple([r.name.lower() for r in roots]) + META_KEYS
-        statistic = json.dumps(cube.metadata['statistic'], default=time_to_json)
-        for root in roots:
-            for dim, dimension in cube.dimensions.items():
-                if dim.lower() not in META_KEYS:
-                    res.append((root.name, root.data.get('title_de'), None, None, None, None, statistic))
-                    if dim.lower() not in excludes:
-                        res.append((root.name, None, dim, dimension.data.get('title_de'), None, None, None))
-                        for value in dimension.values:
-                            res.append((root.name, None, dim, None, value.name, value.data.get('title_de'), None))
-    return res
+def _dumper(value):
+    if isinstance(value, set):
+        return list(value)
+    return cube_serializer(value)
 
 
 def main(args):
     storage = Storage(args.directory)
-    cubes = [c for c in storage]
-    # FIXME
-    # data = parallelize(_get_schema, cubes)
-    data = _get_schema(cubes)
-    columns = ['root', 'root_name', 'dimension', 'dimension_name', 'value', 'value_name', 'statistic']
-    df = pd.DataFrame(
-        data,
-        columns=columns
-    ).drop_duplicates().sort_values(columns, na_position='first')
-    df['root_name'] = df['root_name'].fillna(method='bfill')
-    df['statistic'] = df['statistic'].fillna(method='bfill')
-    df['dimension_name'] = df['dimension_name'].fillna(method='bfill')
-    df['dimension'] = df['dimension'].fillna('').map(slugify_graphql).str.upper()
-    df['value'] = df['value'].fillna('').map(slugify_graphql).str.upper()
-    df.index = df['root'].map(slugify_graphql).str.upper()
     schema = {}
-    for root, data in df.iterrows():
-        if root not in schema:
-            root_data = {
-                'name': data['root_name'],
-                'description': None,
-                'source': json.loads(data['statistic']),
-                'args': {}
-            }
-            if args.attributes:
-                fp = os.path.join(args.attributes, '%s.json' % root)
-                if os.path.isfile(fp):
-                    with open(fp) as f:
-                        desc = json.load(f)
-                    root_data.update(description=clean_description(desc['description']))
-            schema[root] = root_data
-        if data['dimension'] and data['dimension'] not in schema[root]['args']:
-            dim_data = {
-                'name': data['dimension_name'],
-                'description': None,
-                'values': []
-            }
-            if args.attributes:
-                fp = os.path.join(args.attributes, '%s.json' % data['dimension'])
-                if os.path.isfile(fp):
-                    with open(fp) as f:
-                        desc = json.load(f)
-                    dim_data.update(description=clean_description(desc['description']))
-            schema[root]['args'][data['dimension']] = dim_data
-        if data['value']:
-            schema[root]['args'][data['dimension']]['values'].append({
-                'value': data['value'],
-                'name': data['value_name']
-            })
+    for cube in storage._cubes:
+        logger.info('Loading `%s` ...' % cube.name)
+        try:
+            # get attributes with their dimensions from cube
+            statistic_info = cube.metadata['statistic']
+            statistic_key = statistic_info['name']
+            attributes = {k: v.to_dict() for k, v in cube.dimensions.items()
+                          if v.to_dict()['measure_type'] == 'W-MM'}
+            exclude_keys = tuple(a.lower() for a in attributes.keys()) + EXCLUDE_KEYS
 
-    sys.stdout.write(json.dumps(schema, default=time_to_json))
-    logger.log(logging.INFO, 'Obtained %s roots' % len(df['root'].unique()))
-    logger.log(logging.INFO, 'Obtained %s dimensions' % len(df['dimension'].unique()))
-    logger.log(logging.INFO, 'Obtained %s values' % len(df['value'].unique()))
+            # prepare attributes
+            for attribute_key, attribute_info in attributes.items():
+                attribute_key = slugify_graphql(attribute_key, False)
+                attribute_info['dimensions'] = {slugify_graphql(k, False): v.to_dict()
+                                                for k, v in cube.dimensions.items()
+                                                if k.lower() not in exclude_keys}
+                attribute_info['region_levels'] = set()
+
+                # fix non-graphql-conform values keys
+                for dimension_key, dimension in attribute_info['dimensions'].items():
+                    values = []
+                    for value in dimension['values']:
+                        value = value.to_dict()
+                        value.update(key=slugify_graphql(value['name'], False))
+                        values += [value]
+                    dimension['values'] = values
+
+                # and add region level info
+                attribute_info['region_levels'] = set(GENESIS_REGIONS.index(k.lower()) for k in cube.dimensions
+                                                      if k.lower() in GENESIS_REGIONS)
+
+            # add attributes to schema
+            if statistic_key in schema:
+                existing_attributes = schema[statistic_key]['attributes']
+                if attribute_key not in existing_attributes:
+                    existing_attributes[attribute_key] = attribute_info
+                else:
+                    existing_attributes[attribute_key]['values'] += attribute_info['values']
+                    existing_attributes[attribute_key]['region_levels'] |= attribute_info['region_levels']
+                    for k, v in attribute_info['dimensions'].items():
+                        existing_attributes[attribute_key]['dimensions'][k] = v
+            else:
+                schema[statistic_key] = statistic_info
+                schema[statistic_key]['attributes'] = attributes
+        except KeyError:
+            logger.warn('No metadata for cube `%s`' % cube.name)
+
+    sys.stdout.write(json.dumps(schema, default=_dumper))
