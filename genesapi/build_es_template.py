@@ -15,7 +15,7 @@ def _get_template(schema, args):
     mapping = {
         field: {'type': 'keyword'}
         for field in set(f for v in schema.values() for f in v.get('attributes', {}).keys()
-                         | set(['region_id', 'year', 'nuts', 'lau', 'cube']))
+                         | set(['region_id', 'year', 'nuts', 'lau', 'cube', 'statistic']))
     }
     return {
         'index_patterns': [args.index],

@@ -44,10 +44,10 @@ def _get_facts(facts, cube_name, args):
     return res
 
 
-def _long_format(cube, path, facts, args):
+def _long_format(cube, facts, args):
     data = {
         'cube': cube.name,
-        'path': path,
+        'path': facts[0]['path'],  # FIXME
         'format': 'tabular',
         'facts': facts
     }
@@ -72,9 +72,11 @@ def _serialize_cube(cubes, args):
         cube = cube.export(args.force_export)
         if args.long_format:
             df = pd.DataFrame(serialize_fact(f, flat=True) for f in cube.facts)
-            for path in df['path'].unique():
-                data = df[df['path'] == path]
-                yield _long_format(cube, path, list(data.T.to_dict().values()), args)
+            # FIXME path dict / str
+            df['path_str'] = df['path'].map(str)
+            for path in df['path_str'].unique():
+                data = df[df['path_str'] == path]
+                yield _long_format(cube, list(data.T.to_dict().values()), args)
         else:
             facts = parallelize(_get_facts, cube.facts, cube.name, args)
             for fact in facts:

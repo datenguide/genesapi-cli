@@ -42,10 +42,17 @@ def main(args):
     df = df.sort_values('name')
 
     logger.info('Total number of facts in Storage `%s`: %s' % (storage, df['facts_count'].sum()))
-    ordered_fields = ['storage', 'name', 'last_updated', 'last_exported', 'remote_date', 'remote_status', 'facts_count']
+    ordered_fields = [
+        'storage',
+        'name',
+        'last_updated',
+        'last_exported',
+        'remote_date',
+        'remote_status',
+        'facts_count']
     if args.host and args.index:
         es = Elasticsearch(hosts=[args.host])
-        res = es.search(index=args.index, body={'aggs': {'cubes': {'terms': {'field': 'cube', 'size': 20000}}}})  # noqa
+        res = es.search(index=args.index, body={'aggs': {'cubes': {'terms': {'field': 'cube', 'size': 20000}}}})
         df_es = pd.DataFrame(
             ((c['key'], c['doc_count']) for c in res['aggregations']['cubes']['buckets']),
             columns=('name', 'elastic_facts_count')

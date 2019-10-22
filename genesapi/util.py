@@ -82,7 +82,8 @@ def cube_serializer(value):
 
 
 GENESIS_REGIONS = ('dinsg', 'dland', 'regbez', 'kreise', 'gemein')
-META_KEYS = GENESIS_REGIONS + ('stag', 'date', 'jahr', 'year', 'region_id', 'fact_id', 'nuts', 'lau', 'cube')
+META_KEYS = GENESIS_REGIONS + ('stag', 'date', 'jahr', 'year', 'region_id', 'fact_id',
+                               'nuts', 'lau', 'cube', 'statistic', 'region_level')
 EXCLUDE_KEYS = GENESIS_REGIONS + ('stag', 'jahr')
 EXCLUDE_FACT_ID_KEYS = set(META_KEYS) - set(('region_id', 'date', 'year'))
 
@@ -114,6 +115,16 @@ def compute_fact_id(fact):
 
 
 def get_fact_path(fact):
+    # FIXME implementation
+    path = {k: {} for k, v in fact.items() if k.isupper() and isinstance(v, dict)}
+    for k, v in fact.items():
+        if k.isupper() and not isinstance(v, dict):
+            for val in path.values():
+                val[k] = v
+    return path
+
+
+def get_fact_path_str(fact):
     """
     return a string like `BEVZ20(GES:GESM,ALTX20:ALT075UM)` to describe the
     selection of dimensions (without region & time) for this fact
@@ -133,11 +144,13 @@ def serialize_fact(fact, cube_name=None, flat=False):
     fact = fact.to_dict()
     if cube_name:
         fact['cube'] = cube_name
-    for nuts, key in enumerate(GENESIS_REGIONS):
+        fact['statistic'] = cube_name[:5]
+    for level, key in enumerate(GENESIS_REGIONS):
         if fact.get(key.upper()):
             fact['region_id'] = fact.get(key.upper())
-            if nuts < 4:
-                fact['nuts'] = nuts
+            fact['region_level'] = level
+            if level < 4:
+                fact['nuts'] = level
             else:
                 fact['lau'] = 2
             break
@@ -162,6 +175,7 @@ def serialize_fact(fact, cube_name=None, flat=False):
         for k, v in fact.items():
             if isinstance(v, dict) and 'value' in v:
                 fact[k] = v['value']
+
     return json.loads(json.dumps(fact, default=time_to_json))
 
 
