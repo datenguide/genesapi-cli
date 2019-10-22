@@ -15,7 +15,7 @@ class BaseService:
         if catalog is None:
             raise UndefinedCatalog('Please specify a path to the catalog.yaml via `CATALOG` env var')
 
-        logger.log(logging.DEBUG, 'Using `%s` as catalog' % catalog)
+        logger.debug('Using `%s` as catalog' % catalog)
 
         with open(catalog) as f:
             catalog = yaml.load(f.read().strip())
@@ -40,7 +40,7 @@ class Index(BaseService):
         self.kwargs.update(listenLaenge=500)
 
     def get_metadata_for_cube(self, cube_name):
-        logger.log(logging.DEBUG, 'Obtaining metadata for cube `%s` ...' % cube_name)
+        logger.debug('Obtaining metadata for cube `%s` ...' % cube_name)
         res = self.service(filter=cube_name, **self.kwargs)
         if len(res.datenKatalogEintraege) > 1:
             raise UnexpectedSoapResult('Got more than 1 cube')
@@ -48,10 +48,10 @@ class Index(BaseService):
         return self.to_dict(data)
 
     def filter(self, prefix):
-        logger.log(logging.INFO, 'Look up cubes with name starting with `%s` ...' % prefix)
+        logger.debug('Look up cubes with name starting with `%s` ...' % prefix)
         res = self.service(filter='%s*' % prefix, **self.kwargs)
-        logger.log(logging.INFO, 'Found %s cubes with name starting with `%s`' %
-                   (len(res.datenKatalogEintraege), prefix))
+        logger.debug('Found %s cubes with name starting with `%s`' %
+                     (len(res.datenKatalogEintraege), prefix))
         if len(res.datenKatalogEintraege) == 500:
             raise UnexpectedSoapResult('Cube list for "%s*" too long' % prefix)
         return [self.to_dict(e) for e in res.datenKatalogEintraege]
@@ -87,7 +87,7 @@ class Export(BaseService):
         )
 
     def download_cube(self, name):
-        logger.log(logging.INFO, 'Downloading cube `%s` from `%s` ...' % (name, self.client.wsdl.location))
+        logger.info('Downloading cube `%s` from `%s` ...' % (name, self.client.wsdl.location))
         res = self.service(namen=name, **self.kwargs)
         download_metadata = {k: getattr(res, k) for k in res if k != 'quader'}
         cube = res.quader[0]
@@ -96,7 +96,7 @@ class Export(BaseService):
             if e.tag != 'quaderDaten'
         }
         cube_data = cube.find('quaderDaten').text
-        logger.log(logging.INFO, 'Downloaded cube `%s`.' % name)
+        logger.debug('Downloaded cube `%s`.' % name)
         return download_metadata, cube_metadata, cube_data
 
 

@@ -14,10 +14,10 @@ logger = logging.getLogger(__name__)
 
 def main(args):
     try:
-        storage = Storage(args.storage)
+        storage = Storage(args.storage, filelogging=args.cronjob)
     except StorageDoesNotExist:
         if args.new:
-            storage = Storage.create(args.storage)
+            storage = Storage.create(args.storage, filelogging=args.cronjob)
         else:
             raise StorageDoesNotExist(
                 'Storage does not exist at `%s`. If you want to create it, use the --new flag.' %

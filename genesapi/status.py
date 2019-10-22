@@ -30,7 +30,7 @@ def _get_cubes_data(cubes):
 
 
 def main(args):
-    logger.debug('Obtaining stats for Storage `%s` ...' % args.storage)
+    logger.info('Obtaining stats for Storage `%s` ...' % args.storage)
     storage = Storage(args.storage)
     # data = parallelize(_get_cubes_data, storage)
     data = _get_cubes_data(storage)
@@ -45,7 +45,7 @@ def main(args):
     ordered_fields = ['storage', 'name', 'last_updated', 'last_exported', 'remote_date', 'remote_status', 'facts_count']
     if args.host and args.index:
         es = Elasticsearch(hosts=[args.host])
-        res = es.search(index=args.index, body={'aggs': {'cubes': {'terms': {'field': 'cube.keyword', 'size': 20000}}}})  # noqa
+        res = es.search(index=args.index, body={'aggs': {'cubes': {'terms': {'field': 'cube', 'size': 20000}}}})  # noqa
         df_es = pd.DataFrame(
             ((c['key'], c['doc_count']) for c in res['aggregations']['cubes']['buckets']),
             columns=('name', 'elastic_facts_count')
@@ -57,4 +57,4 @@ def main(args):
 
     df['facts_count'] = df['facts_count'].fillna(0).map(int)
     df[ordered_fields].to_csv(sys.stdout, index=False)
-    logger.debug('Finished obtaining stats for Storage `%s`' % args.storage)
+    logger.info('Finished obtaining stats for Storage `%s`' % args.storage)

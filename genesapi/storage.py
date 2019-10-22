@@ -95,9 +95,9 @@ class CubeRevision(Mixin):
         return get_value_from_file(self._path('meta.yml'), transform=yaml.load)
 
     def create(self, download_metadata, cube_metadata, cube_data, overwrite=False):
-        logger.log(logging.INFO, 'Creating new revision for cube `%s` ...' % self.cube)
+        logger.debug('Creating new revision for cube `%s` ...' % self.cube)
         if overwrite:
-            logger.log(logging.INFO, '(Force updating)')
+            logger.debug('(Force updating)')
         if self.exists and not overwrite:
             raise ShouldNotHappen(
                 'Revision "%s" for cube "%s" already exists!' %
@@ -116,7 +116,7 @@ class CubeRevision(Mixin):
         if os.path.exists(fp):
             os.remove(fp)
         os.symlink(self.name, fp)
-        logger.log(logging.INFO, 'Created new revision `%s` for cube `%s`.' % (self.name, self.cube))
+        logger.info('Created new revision `%s` for cube `%s`.' % (self.name, self.cube))
 
     def load(self):
         with open(self._path('data.csv')) as f:
@@ -161,16 +161,16 @@ class Cube(Mixin):
 
     def should_update(self, date=None):
         if not self.exists:
-            logger.log(logging.INFO, 'Updating cube `%s` because it didn\'t exist yet ...' % self.name)
+            logger.info('Updating cube `%s` because it didn\'t exist yet ...' % self.name)
             return True
         if date is None:
             cube_metadata = IndexService.get_metadata_for_cube(self.name)
             date = to_date(cube_metadata['stand'], force_ws=True)
         should_update = self.current.date < date
         if should_update:
-            logger.log(logging.INFO, 'Updating cube `%s` because a newer version is available ...' % self.name)
+            logger.info('Updating cube `%s` because a newer version is available ...' % self.name)
         else:
-            logger.log(logging.INFO, 'Cube `%s` is up to date.' % self.name)
+            logger.debug('Cube `%s` is up to date.' % self.name)
         return should_update
 
     def update(self, force=False):
@@ -182,7 +182,7 @@ class Cube(Mixin):
                 revision.create(download_metadata, cube_metadata, cube_data, force)
                 self.touch('last_updated')
             else:
-                logger.log(logging.ERROR, 'Cube `%s` seems not to be valid' % self)
+                logger.error('Cube `%s` seems not to be valid' % self)
 
     def should_export(self, force=False):
         if force:
@@ -204,15 +204,18 @@ class Cube(Mixin):
 
 
 class Storage(Mixin):
-    def __init__(self, directory):
+    def __init__(self, directory, filelogging=False):
         if not os.path.exists(directory):
             raise StorageDoesNotExist(
                 'Storage does not exist at `%s`. If you want to create it, use `Storage.create("%s")`' %
                 (directory, directory))
         self.directory = directory
         self.name = directory
-        self.loggingHandler = logging.FileHandler(self._path('logs', '%s.log' % datetime.now().isoformat()))
-        self.loggingHandler.setFormatter(logging.Formatter('%(asctime)s:%(levelname)s:%(message)s'))
+        self.filelogging = filelogging
+        if self.filelogging:
+            self.loggingHandler = logging.FileHandler(self._path('logs', '%s.log' % datetime.now().isoformat()))
+            self.loggingHandler.setFormatter(logging.Formatter('%(asctime)s:%(levelname)s:%(message)s'))
+            logger.addHandler(self.loggingHandler)
 
     def __iter__(self):
         for fp in os.listdir(self.directory):
@@ -223,7 +226,7 @@ class Storage(Mixin):
         return len(self.cubes)
 
     def update(self, prefix=None, force=False):
-        logger.addHandler(self.loggingHandler)
+        self.touch('last_updated')  # set timestamp before to avoid potential race conditions
         if prefix:
             entries = IndexService.filter(prefix)
         else:
@@ -231,7 +234,6 @@ class Storage(Mixin):
         for entry in entries:
             cube = Cube(entry['code'], self)
             cube.update(force)
-        self.touch('last_updated')
 
     def get_cubes_for_export(self, force=False):
         return [c for c in self if c.should_export(force)]
