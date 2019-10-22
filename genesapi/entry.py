@@ -93,6 +93,10 @@ COMMANDS = {
             'flag': 'storage',
             'help': 'Directory with raw cubes downloaded via the `fetch` command'
         }, {
+            'flag': '--long-format',
+            'help': 'Export as long table format, 1 doc per cube',
+            'action': 'store_true'
+        }, {
             'flag': '--output',
             'help': 'Output directory. If none, print each record per line to stdout'
         }, {

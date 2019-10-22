@@ -6,11 +6,11 @@ jsonify cubes records
 import json
 import logging
 import os
+import pandas as pd
 import sys
 
 from genesapi.storage import Storage
 from genesapi.util import (
-    compute_fact_id,
     serialize_fact,
     parallelize
 )
@@ -21,12 +21,10 @@ logger = logging.getLogger(__name__)
 
 def _get_fact(fact, cube_name, args):
     data = serialize_fact(fact, cube_name)
-    id_ = compute_fact_id(data)
-    data['fact_id'] = id_
     if args.output:
         path = os.path.join(args.output, cube_name)
         os.makedirs(path, exist_ok=True)
-        with open(os.path.join(path, '%s.json' % id_), 'w') as f:
+        with open(os.path.join(path, '%s.json' % fact['fact_id']), 'w') as f:
             if args.pretty:
                 json.dump(data, f, indent=2)
             else:
@@ -46,13 +44,41 @@ def _get_facts(facts, cube_name, args):
     return res
 
 
-def _get_json_facts(cubes, args):
+def _long_format(cube, path, facts, args):
+    data = {
+        'cube': cube.name,
+        'path': path,
+        'format': 'tabular',
+        'facts': facts
+    }
+    if args.output:
+        path = os.path.join(args.output, cube.name)
+        os.makedirs(path, exist_ok=True)
+        with open(os.path.join(path, 'facts_long.json'), 'w') as f:
+            if args.pretty:
+                json.dump(data, f, indent=2)
+            else:
+                json.dump(data, f)
+    else:
+        if args.pretty:
+            return json.dumps(data, indent=2)
+        else:
+            return json.dumps(data)
+
+
+def _serialize_cube(cubes, args):
     for i, cube in enumerate(cubes):
-        logger.info('Loading cube `%s` (%s of %s) ...' % (cube, i+1, len(cubes)))
+        logger.info('Loading cube `%s` (%s of %s) ...' % (cube, i + 1, len(cubes)))
         cube = cube.export(args.force_export)
-        facts = parallelize(_get_facts, cube.facts, cube.name, args)
-        for fact in facts:
-            yield fact
+        if args.long_format:
+            df = pd.DataFrame(serialize_fact(f, flat=True) for f in cube.facts)
+            for path in df['path'].unique():
+                data = df[df['path'] == path]
+                yield _long_format(cube, path, list(data.T.to_dict().values()), args)
+        else:
+            facts = parallelize(_get_facts, cube.facts, cube.name, args)
+            for fact in facts:
+                yield fact
 
 
 def main(args):
@@ -69,9 +95,10 @@ def main(args):
         logger.info('Everything seems up to date.')
     else:
         storage.touch('last_exported')  # set timestamp before to avoid potential race conditions
-        for fact in _get_json_facts(cubes, args):
+        for data in _serialize_cube(cubes, args):
             if not args.output:
-                sys.stdout.write(fact + '\n')
+                sys.stdout.write(data + '\n')
             i += 1
-    logger.info('Serialized %s facts.' % i)
+    if not args.long_format:
+        logger.info('Serialized %s facts.' % i)
     logger.info('Finished serialize %s cubes from `%s` .' % (len(cubes), storage))

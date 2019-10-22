@@ -113,7 +113,22 @@ def compute_fact_id(fact):
     return make_key(sorted(parts))
 
 
-def serialize_fact(fact, cube_name=None):
+def get_fact_path(fact):
+    """
+    return a string like `BEVZ20(GES:GESM,ALTX20:ALT075UM)` to describe the
+    selection of dimensions (without region & time) for this fact
+    [sort args alphabetically]
+    """
+    # FIXME implementation
+    attributes = [k for k, v in fact.items() if k.isupper() and isinstance(v, dict)]
+    dimensions = []
+    for k, v in fact.items():
+        if k.isupper() and not isinstance(v, dict):
+            dimensions += [':'.join((k, v))]
+    return '%s%s' % (','.join(attributes), ('(%s)' % ','.join(sorted(dimensions)) if dimensions else ''))
+
+
+def serialize_fact(fact, cube_name=None, flat=False):
     """convert `regensis.cube.Fact` to json-seriable dict"""
     fact = fact.to_dict()
     if cube_name:
@@ -135,9 +150,18 @@ def serialize_fact(fact, cube_name=None):
     # for easier time based analysis:
     if 'date' not in fact and 'year' in fact:
         fact['date'] = datetime(int(fact['year']), 12, 31).date()
+
     fact = {k.upper() if k.lower() not in META_KEYS else k.lower():
             slugify_graphql(v, False) if k not in META_KEYS else v
             for k, v in fact.items() if k.lower() not in EXCLUDE_KEYS}
+
+    fact['fact_id'] = compute_fact_id(fact)
+    fact['path'] = get_fact_path(fact)
+
+    if flat:
+        for k, v in fact.items():
+            if isinstance(v, dict) and 'value' in v:
+                fact[k] = v['value']
     return json.loads(json.dumps(fact, default=time_to_json))
 
 

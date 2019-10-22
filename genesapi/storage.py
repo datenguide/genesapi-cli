@@ -33,6 +33,7 @@ a `Storage` has a base directory with this layout:
 
 import logging
 import os
+import pandas as pd
 import re
 import yaml
 
@@ -41,7 +42,15 @@ from regenesis.cube import Cube as RegenesisCube
 
 from genesapi.exceptions import StorageDoesNotExist, ShouldNotHappen
 from genesapi.soap_services import IndexService, ExportService
-from genesapi.util import cached_property, get_value_from_file, to_date, is_isoformat
+from genesapi.util import (
+    cached_property,
+    get_value_from_file,
+    is_isoformat,
+    to_date,
+    slugify_graphql,
+    EXCLUDE_KEYS,
+    GENESIS_REGIONS
+)
 
 
 logger = logging.getLogger(__name__)
@@ -72,6 +81,40 @@ class Mixin:
 
     def __repr__(self):
         return '<%s: %s>' % (self.__class__.__name__, self.directory)
+
+
+class CubeSchema:
+    def __init__(self, regenesis_cube):
+        self._cube = regenesis_cube
+
+    @cached_property
+    def attributes(self):
+        return {k: v.to_dict() for k, v in self._cube.dimensions.items()
+                if v.to_dict()['measure_type'] == 'W-MM'}
+
+    @cached_property
+    def dimensions(self):
+        dimensions = {slugify_graphql(k, False): v.to_dict()
+                      for k, v in self._cube.dimensions.items()
+                      if k.lower() not in self._exclude_keys}
+        for dimension in dimensions.values():
+            # fix non-graphql-conform values keys
+            dimension['values'] = [{**v.to_dict(), **{'key': slugify_graphql(v.name, False)}}
+                                   for v in dimension['values']]
+        return dimensions
+
+    @cached_property
+    def flat(self):
+        return {**{a: {dk: {v['key']: True for v in d['values']} for dk, d in self.dimensions.items()}
+                   for a in self.attributes}, **{'region_levels': list(self.region_levels)}}
+
+    @cached_property
+    def region_levels(self):
+        return set(GENESIS_REGIONS.index(k.lower()) for k in self._cube.dimensions if k.lower() in GENESIS_REGIONS)
+
+    @cached_property
+    def _exclude_keys(self):
+        return tuple(a.lower() for a in self.attributes.keys()) + EXCLUDE_KEYS
 
 
 class CubeRevision(Mixin):
@@ -123,6 +166,13 @@ class CubeRevision(Mixin):
             raw = f.read().strip()
         return RegenesisCube(self.cube.name, raw)
 
+    def as_df(self):
+        return pd.DataFrame(self.load().facts)
+
+    @cached_property
+    def schema(self):
+        return CubeSchema(self.load())
+
 
 class Cube(Mixin):
     def __init__(self, name, storage):
@@ -151,13 +201,13 @@ class Cube(Mixin):
         return self._cube.facts
 
     @cached_property
-    def dimensions(self):
-        return self._cube.dimensions
-
-    @cached_property
     def revisions(self):
         return sorted([CubeRevision(self, rev) for rev in os.listdir(self.directory) if is_isoformat(rev)],
                       key=lambda x: x.date, reverse=True)
+
+    @cached_property
+    def schema(self):
+        return self.current.schema
 
     def should_update(self, date=None):
         if not self.exists:
@@ -195,6 +245,10 @@ class Cube(Mixin):
         if force or self.should_export():
             self.touch('last_exported')
             return self.current.load()
+
+    @cached_property
+    def df(self):
+        return self.current.as_df()
 
     @cached_property
     def _cube(self):

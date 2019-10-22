@@ -60,13 +60,11 @@ import json
 import logging
 import sys
 
-from genesapi.storage import Storage
+from genesapi.storage import Storage, CubeSchema
 from genesapi.util import (
     slugify_graphql,
     cube_serializer,
     #     clean_description
-    GENESIS_REGIONS,
-    EXCLUDE_KEYS
 )
 
 
@@ -88,30 +86,14 @@ def main(args):
             # get attributes with their dimensions from cube
             statistic_info = cube.metadata['statistic']
             statistic_key = statistic_info['name']
-            attributes = {k: v.to_dict() for k, v in cube.dimensions.items()
-                          if v.to_dict()['measure_type'] == 'W-MM'}
-            exclude_keys = tuple(a.lower() for a in attributes.keys()) + EXCLUDE_KEYS
+            cube_schema = CubeSchema(cube)
+            attributes = cube_schema.attributes
 
             # prepare attributes
             for attribute_key, attribute_info in attributes.items():
                 attribute_key = slugify_graphql(attribute_key, False)
-                attribute_info['dimensions'] = {slugify_graphql(k, False): v.to_dict()
-                                                for k, v in cube.dimensions.items()
-                                                if k.lower() not in exclude_keys}
-                attribute_info['region_levels'] = set()
-
-                # fix non-graphql-conform values keys
-                for dimension_key, dimension in attribute_info['dimensions'].items():
-                    values = []
-                    for value in dimension['values']:
-                        value = value.to_dict()
-                        value.update(key=slugify_graphql(value['name'], False))
-                        values += [value]
-                    dimension['values'] = values
-
-                # and add region level info
-                attribute_info['region_levels'] = set(GENESIS_REGIONS.index(k.lower()) for k in cube.dimensions
-                                                      if k.lower() in GENESIS_REGIONS)
+                attribute_info['dimensions'] = cube_schema.dimensions
+                attribute_info['region_levels'] = cube_schema.region_levels
 
             # add attributes to schema
             if statistic_key in schema:
