@@ -17,11 +17,10 @@ def _get_template(schema, args):
         'mappings': {
             'properties': {**{
                 field: {'type': 'keyword'} for field in set(
-                    value['key'] for statistic in schema.values()
+                    dimension for statistic in schema.values()
                     for attribute in statistic.get('attributes', {}).values()
-                    for dimension in attribute.get('dimensions', {}).values()
-                    for value in dimension.get('values', [])
-                ) | set(['region_id', 'year', 'nuts', 'lau', 'cube', 'statistic'])
+                    for dimension in attribute.get('dimensions', {}).keys()
+                ) | set(['region_id', 'nuts', 'lau', 'cube', 'statistic'])
             }, **{'path': {'type': 'object'}}}
         },
         'settings': {
