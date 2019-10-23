@@ -12,15 +12,17 @@ logger = logging.getLogger(__name__)
 
 
 def _get_template(schema, args):
-    mapping = {
-        field: {'type': 'keyword'}
-        for field in set(f for v in schema.values() for f in v.get('attributes', {}).keys()
-                         | set(['region_id', 'year', 'nuts', 'lau', 'cube', 'statistic']))
-    }
     return {
-        'index_patterns': [args.index],
+        'index_patterns': [args.index_pattern],
         'mappings': {
-            'properties': mapping
+            'properties': {**{
+                field: {'type': 'keyword'} for field in set(
+                    value['key'] for statistic in schema.values()
+                    for attribute in statistic.get('attributes', {}).values()
+                    for dimension in attribute.get('dimensions', {}).values()
+                    for value in dimension.get('values', [])
+                ) | set(['region_id', 'year', 'nuts', 'lau', 'cube', 'statistic'])
+            }, **{'path': {'type': 'object'}}}
         },
         'settings': {
             'index.mapping.total_fields.limit': 100000,

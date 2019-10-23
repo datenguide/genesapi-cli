@@ -73,9 +73,9 @@ COMMANDS = {
             'flag': 'schema',
             'help': 'JSON file from `build_schema` output'
         }, {
-            'flag': '--index',
-            'help': 'Name of elasticsearch index',
-            'default': 'genesapi'
+            'flag': '--index-pattern',
+            'help': 'Elasticsearch index pattern',
+            'default': 'genesapi-*'
         }, {
             'flag': '--shards',
             'help': 'Number of shards for elasticsearch index',
