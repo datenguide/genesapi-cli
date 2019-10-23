@@ -84,12 +84,14 @@ class Mixin:
 
 
 class CubeSchema:
+    # FIXME clean description
+
     def __init__(self, regenesis_cube):
         self._cube = regenesis_cube
 
     @cached_property
     def attributes(self):
-        return {k: v.to_dict() for k, v in self._cube.dimensions.items()
+        return {slugify_graphql(k, False): v.to_dict() for k, v in self._cube.dimensions.items()
                 if v.to_dict()['measure_type'] == 'W-MM'}
 
     @cached_property

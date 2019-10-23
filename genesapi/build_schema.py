@@ -61,11 +61,7 @@ import logging
 import sys
 
 from genesapi.storage import Storage, CubeSchema
-from genesapi.util import (
-    slugify_graphql,
-    cube_serializer,
-    #     clean_description
-)
+from genesapi.util import cube_serializer
 
 
 logger = logging.getLogger(__name__)
@@ -91,7 +87,6 @@ def main(args):
 
             # prepare attributes
             for attribute_key, attribute_info in attributes.items():
-                attribute_key = slugify_graphql(attribute_key, False)
                 attribute_info['dimensions'] = cube_schema.dimensions
                 attribute_info['region_levels'] = cube_schema.region_levels
 
