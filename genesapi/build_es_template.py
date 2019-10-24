@@ -21,7 +21,7 @@ def _get_template(schema, args):
                     for attribute in statistic.get('attributes', {}).values()
                     for dimension in attribute.get('dimensions', {}).keys()
                 ) | set(['region_id', 'nuts', 'lau', 'cube', 'statistic'])
-            }, **{'path': {'type': 'object'}}}
+            }, **{'path': {'type': 'object'}, 'year': {'type': 'short'}}}
         },
         'settings': {
             'index.mapping.total_fields.limit': 100000,
