@@ -90,8 +90,9 @@ class CubeSchema:
         self._cube = regenesis_cube
 
     @cached_property
-    def attributes(self):
-        return {slugify_graphql(k, False): v.to_dict() for k, v in self._cube.dimensions.items()
+    def measures(self):
+        return {slugify_graphql(k, False): {**v.to_dict(), **{'units': self._cube.metadata['units']}}
+                for k, v in self._cube.dimensions.items()
                 if v.to_dict()['measure_type'] == 'W-MM'}
 
     @cached_property
@@ -108,7 +109,7 @@ class CubeSchema:
     @cached_property
     def flat(self):
         return {**{a: {dk: {v['key']: True for v in d['values']} for dk, d in self.dimensions.items()}
-                   for a in self.attributes}, **{'region_levels': list(self.region_levels)}}
+                   for a in self.measures}, **{'region_levels': list(self.region_levels)}}
 
     @cached_property
     def region_levels(self):
@@ -116,7 +117,7 @@ class CubeSchema:
 
     @cached_property
     def _exclude_keys(self):
-        return tuple(a.lower() for a in self.attributes.keys()) + EXCLUDE_KEYS
+        return tuple(a.lower() for a in self.measures.keys()) + EXCLUDE_KEYS
 
 
 class CubeRevision(Mixin):

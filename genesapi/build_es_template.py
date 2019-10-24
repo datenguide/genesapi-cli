@@ -18,8 +18,8 @@ def _get_template(schema, args):
             'properties': {**{
                 field: {'type': 'keyword'} for field in set(
                     dimension for statistic in schema.values()
-                    for attribute in statistic.get('attributes', {}).values()
-                    for dimension in attribute.get('dimensions', {}).keys()
+                    for measure in statistic.get('measures', {}).values()
+                    for dimension in measure.get('dimensions', {}).keys()
                 ) | set(['region_id', 'nuts', 'lau', 'cube', 'statistic'])
             }, **{'path': {'type': 'object'}, 'year': {'type': 'short'}}}
         },

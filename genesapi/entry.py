@@ -27,37 +27,11 @@ COMMANDS = {
             'action': 'store_true'
         })
     },
-    'fetch_attributes': {
-        'args': ({
-            'flag': 'catalog',
-            'help': 'YAML file with catalog config'
-        }, {
-            'flag': 'output',
-            'help': 'Directory where to store attributes data'
-        }, {
-            'flag': '--replace',
-            'help': 'Replace existing (previously downloaded) attributes',
-            'action': 'store_true',
-            'default': False
-        })
-    },
     'build_schema': {
         'args': ({
             'flag': 'directory',
             'help': 'Directory with raw cubes downloaded via the `fetch` command'
-        }, {
-            'flag': '--attributes',
-            'help': 'Directory where JSON files of attribute descriptions are stored'
-        })
-    },
-    'build_mappings': {
-        'args': ({
-                     'flag': 'directory',
-                     'help': 'Directory with raw cubes downloaded via the `fetch` command'
-                 }, {
-                     'flag': '--attributes',
-                     'help': 'Directory where JSON files of attribute descriptions are stored'
-                 })
+        },)
     },
     'build_markdown': {
         'args': ({

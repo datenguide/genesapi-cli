@@ -5,7 +5,7 @@ build schema out of cubes
 schema layout:
 
 - statistic:
-  - attribute:
+  - measure:
     - dimension:
       - value
 
@@ -17,7 +17,7 @@ schema layout:
     "valid_from": "2011-05-09T00:00:00",
     "periodicity": "EINMALIG",
     "name": "12111",
-    "attributes": {
+    "measures": {
       "BEVZ20": {
         "name": "BEVZ20",
         "title_de": "Bevölkerung",
@@ -79,30 +79,29 @@ def main(args):
     for cube in storage._cubes:
         logger.info('Loading `%s` ...' % cube.name)
         try:
-            # get attributes with their dimensions from cube
+            # get measures with their dimensions from cube
             statistic_info = cube.metadata['statistic']
             statistic_key = statistic_info['name']
             cube_schema = CubeSchema(cube)
-            attributes = cube_schema.attributes
+            measures = cube_schema.measures
 
-            # prepare attributes
-            for attribute_key, attribute_info in attributes.items():
-                attribute_info['dimensions'] = cube_schema.dimensions
-                attribute_info['region_levels'] = cube_schema.region_levels
+            # prepare measures
+            for measure_key, measure_info in measures.items():
+                measure_info['dimensions'] = cube_schema.dimensions
+                measure_info['region_levels'] = cube_schema.region_levels
 
-            # add attributes to schema
+            # add measures to schema
             if statistic_key in schema:
-                existing_attributes = schema[statistic_key]['attributes']
-                if attribute_key not in existing_attributes:
-                    existing_attributes[attribute_key] = attribute_info
+                existing_measures = schema[statistic_key]['measures']
+                if measure_key not in existing_measures:
+                    existing_measures[measure_key] = measure_info
                 else:
-                    existing_attributes[attribute_key]['values'] += attribute_info['values']
-                    existing_attributes[attribute_key]['region_levels'] |= attribute_info['region_levels']
-                    for k, v in attribute_info['dimensions'].items():
-                        existing_attributes[attribute_key]['dimensions'][k] = v
+                    existing_measures[measure_key]['region_levels'] |= measure_info['region_levels']
+                    for k, v in measure_info['dimensions'].items():
+                        existing_measures[measure_key]['dimensions'][k] = v
             else:
                 schema[statistic_key] = statistic_info
-                schema[statistic_key]['attributes'] = attributes
+                schema[statistic_key]['measures'] = measures
         except KeyError:
             logger.warn('No metadata for cube `%s`' % cube.name)
 

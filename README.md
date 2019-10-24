@@ -60,17 +60,16 @@ Documentation](#full-documentation) if you need to understand whats going on exa
 
 Before *really executing* this, read at least the notes below this list.
 
-    mkdir ./data/{cubes,attributes}
-    CATALOG=catalog.yml genesapi fetch ./data/cubes/
-    genesapi fetch_attributes catalog.yml ./data/attributes/
-    genesapi build_schema ./data/cubes/ --attributes ./data/attributes/ > schema.json
+    mkdir ./data/
+    CATALOG=catalog.yml genesapi fetch ./data/
+    genesapi build_schema ./data/ > schema.json
     genesapi build_es_template ./schema.json > template.json
     curl -H 'Content-Type: application/json' -XPOST http://localhost:9200/_template/genesapi -d@template.json
-    genesapi jsonify cubes | logstash -f logstash.conf
+    genesapi jsonify ./data/ | logstash -f logstash.conf
     genesapi status --host localhost:9200 --index genesapi > status.csv
 
 Its roughly about to download 1.2G from the *GENESIS* soap api. The
-Elasticsearch index well be around 25G at the end. The soap api is very slow
+Elasticsearch index well be around 8G at the end. The soap api is very slow
 and the complete download (currently 2278 single csv files aka *cubes*) takes
 *several* hours, as well as the indexing into Elasticsearch.
 
@@ -101,7 +100,6 @@ csv data *cubes* and transform them into a json-serializable format.
 ### Tasks:
 
 1. [**fetch**](#fetch)
-2. [fetch_attributes](#fetch_attributes)
 3. [build_schema](#build_schema)
 4. [build_markdown](#build_markdown)
 5. [build_es_template](#build_es_template)
@@ -156,9 +154,9 @@ Example:
     CATALOG=catalog.yml genesapi fetch ./data/cubes/
 
 
-##### filter
+##### prefix
 
-You can filter for a prefix of the cube names with the `--filter` option.
+You can filter for a prefix of the cube names with the `--prefix` option.
 
 To retrieve only cubes for the statistic id "11111":
 
@@ -173,7 +171,7 @@ specific point in time (or timespan)*
 
 - value: a number, either `int` or `float`
 - topic: a broader topic like "work statistics" described with a combination of
-  *attributes* and *filters*, e.g. "Gender: Female, Age: 15 to 20 years"
+  *measures* and their *dimensions*, e.g. "Gender: Female, Age: 15 to 20 years"
 - location: Germany itself or a state, district or municipality in Germany.
 - time: either a year or a specific date.
 
@@ -239,29 +237,6 @@ Download logstash and install it somehow, use the logstash config in this repo.
 [See here a more detailed description how to set up an Elasticsearch cluster
 for genesapi](https://github.com/datenguide/datenguide-backend#setup-elasticsearch-locally-with-sample-data)
 
-#### fetch_attributes
-
-Download attributes (aka "Merkmale") info from the *GENESIS* api to provide
-some more context for [`build_schema`](#build_schema) and
-[`build_markdown`](#build_markdown)
-
-Catalog: See [`fetch`](#fetch).
-
-```
-usage: genesapi fetch_attributes [-h] [--replace] catalog output
-
-positional arguments:
-  catalog     YAML file with catalog config
-  output      Directory where to store attributes data
-
-optional arguments:
-  -h, --help  show this help message and exit
-  --replace   Replace existing (previously downloaded) attributes
-```
-
-Example:
-
-    genesapi fetch_attributes catalog.yml ./data/attributes/
 
 #### build_schema
 
@@ -270,16 +245,12 @@ app](https://github.com/datenguide/datenguide-backend) and for the tasks
 [`build_es_template`](#build_es_template) and
 [`build_markdown`](#build_markdown).
 
-This commands grabs the raw *cubes* and extracts the attribute ("Merkmal")
+This commands grabs the raw *cubes* and extracts the measures ("Merkmal")
 structure out of it into a json format printed to `stdout`.
 
-Optionally using the attributes data (`--attributes`) from
-[`fetch_attributes`](#fetch_attributes) provides the schema with longer
-descriptions for the attributes, that can be rendered e.g. into a documentation
-or used by [`build_markdown`](#build_markdown)
 
 ```
-usage: genesapi build_schema [-h] [--attributes ATTRIBUTES] directory
+usage: genesapi build_schema [-h] directory
 
 positional arguments:
   directory             Directory with raw cubes downloaded via the `fetch`
@@ -287,14 +258,11 @@ positional arguments:
 
 optional arguments:
   -h, --help            show this help message and exit
-  --attributes ATTRIBUTES
-                        Directory where JSON files of attribute descriptions
-                        are stored
 ```
 
-Example including attributes data:
+Example:
 
-    genesapi build_schema ./data/cubes/ --attributes ./data/attributes/ > schema.json
+    genesapi build_schema ./data/cubes/ > schema.json
 
 #### build_es_template
 
@@ -329,8 +297,7 @@ for genesapi](https://github.com/datenguide/datenguide-backend#setup-elasticsear
 
 #### build_markdown
 
-Export each *attribute* (from [`fetch_attributes`](#fetch_attributes), wrangled
-into 1 json file via [`build_schema`](#build_schema)) to a markdown with
+Export each *measure* (from [the schema](#build_schema) to a markdown with
 frontmatter that could be used to generate a documentation page powered by
 [jekyll](https://jekyllrb.com/) or [gatsby](https://www.gatsbyjs.org/).
 
