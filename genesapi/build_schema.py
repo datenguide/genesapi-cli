@@ -89,6 +89,7 @@ def main(args):
             for measure_key, measure_info in measures.items():
                 measure_info['dimensions'] = cube_schema.dimensions
                 measure_info['region_levels'] = cube_schema.region_levels
+                measure_info['cubes'] = set([cube.name])
 
             # add measures to schema
             if statistic_key in schema:
@@ -99,6 +100,7 @@ def main(args):
                     existing_measures[measure_key]['region_levels'] |= measure_info['region_levels']
                     for k, v in measure_info['dimensions'].items():
                         existing_measures[measure_key]['dimensions'][k] = v
+                    existing_measures[measure_key]['cubes'] |= measure_info['cubes']
             else:
                 schema[statistic_key] = statistic_info
                 schema[statistic_key]['measures'] = measures
