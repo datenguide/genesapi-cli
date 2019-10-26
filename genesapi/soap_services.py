@@ -20,7 +20,7 @@ class BaseService:
         with open(catalog) as f:
             catalog = yaml.load(f.read().strip())
 
-        self.client = Client(catalog['%s_url' % self.__class__.__name__.lower()],
+        self.client = Client(catalog['%s_url' % self.__class__.__name__.lower().replace('service', '')],
                              settings=Settings(strict=False, xml_huge_tree=True))
         self.kwargs = {
             'kennung': catalog['username'],
@@ -33,7 +33,7 @@ class BaseService:
         return {e.tag: e.text for e in element}
 
 
-class Index(BaseService):
+class IndexService(BaseService):
     def __init__(self):
         super().__init__()
         self.service = self.client.service.DatenKatalog
@@ -62,7 +62,7 @@ class Index(BaseService):
                 yield entry
 
 
-class Export(BaseService):
+class ExportService(BaseService):
     def __init__(self):
         super().__init__()
         self.service = self.client.service.DatenExport
@@ -98,7 +98,3 @@ class Export(BaseService):
         cube_data = cube.find('quaderDaten').text
         logger.debug('Downloaded cube `%s`.' % name)
         return download_metadata, cube_metadata, cube_data
-
-
-IndexService = Index()
-ExportService = Export()

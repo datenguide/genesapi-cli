@@ -217,7 +217,7 @@ class Cube(Mixin):
             logger.info('Updating cube `%s` because it didn\'t exist yet ...' % self.name)
             return True
         if date is None:
-            cube_metadata = IndexService.get_metadata_for_cube(self.name)
+            cube_metadata = IndexService().get_metadata_for_cube(self.name)
             date = to_date(cube_metadata['stand'], force_ws=True)
         should_update = self.current.date < date
         if should_update:
@@ -228,7 +228,7 @@ class Cube(Mixin):
 
     def update(self, force=False):
         if force or self.should_update():
-            download_metadata, cube_metadata, cube_data = ExportService.download_cube(self.name)
+            download_metadata, cube_metadata, cube_data = ExportService().download_cube(self.name)
             if cube_metadata['stand'] and cube_data:
                 rev_name = to_date(cube_metadata['stand'], force_ws=True).isoformat()
                 revision = CubeRevision(self, rev_name)
@@ -284,11 +284,10 @@ class Storage(Mixin):
 
     def update(self, prefix=None, force=False):
         self.touch('last_updated')  # set timestamp before to avoid potential race conditions
+        service = IndexService()
         if prefix:
-            entries = IndexService.filter(prefix)
-        else:
-            entries = IndexService
-        for entry in entries:
+            service = service.filter(prefix)
+        for entry in service:
             cube = Cube(entry['code'], self)
             cube.update(force)
 
