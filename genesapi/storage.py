@@ -99,7 +99,7 @@ class CubeSchema:
     def dimensions(self):
         dimensions = {slugify_graphql(k, False): v.to_dict()
                       for k, v in self._cube.dimensions.items()
-                      if k.lower() not in self._exclude_keys}
+                      if slugify_graphql(k) not in self._exclude_keys}
         for dimension in dimensions.values():
             # fix non-graphql-conform values keys
             dimension['values'] = [{**v.to_dict(), **{'key': slugify_graphql(v.name, False)}}
@@ -108,8 +108,8 @@ class CubeSchema:
 
     @cached_property
     def flat(self):
-        return {**{a: {dk: {v['key']: True for v in d['values']} for dk, d in self.dimensions.items()}
-                   for a in self.measures}, **{'region_levels': list(self.region_levels)}}
+        return {**{m: {dk: {v['key']: True for v in d['values']} for dk, d in self.dimensions.items()}
+                   for m in self.measures}, **{'region_levels': list(self.region_levels)}}
 
     @cached_property
     def region_levels(self):
