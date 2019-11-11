@@ -104,9 +104,9 @@ class CubeSchema:
                       if slugify_graphql(k) not in self._exclude_keys}
         for dimension in dimensions.values():
             # fix non-graphql-conform values keys
-            dimension['value_names'] = {v.data['name']: v.data['title_de'] for v in dimension['values']}
             dimension['values'] = [{**v.to_dict(), **{'key': slugify_graphql(v.name, False)}}
                                    for v in dimension['values']]
+            dimension['value_names'] = {v['key']: v['title_de'] for v in dimension['values']}
         return dimensions
 
     @cached_property
