@@ -25,7 +25,7 @@ def _get_facts(facts, cube, args):
     for fact in facts:
         i = 0
         for unpacked_fact in unpack_fact(fact, cube.schema):
-            data = serialize_fact(unpacked_fact, cube.name)
+            data = serialize_fact(unpacked_fact, cube)
             if args.fulltext:
                 data.update(get_fulltext_data(data, cube))
             if args.output:

@@ -144,7 +144,7 @@ class CubeRevision(Mixin):
 
     @cached_property
     def exported(self):
-        return get_value_from_file(self._path('downloaded'), transform=to_date)
+        return get_value_from_file(self._path('exported'), transform=to_date)
 
     @cached_property
     def metadata(self):

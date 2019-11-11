@@ -84,7 +84,8 @@ def cube_serializer(value):
 
 GENESIS_REGIONS = ('dinsg', 'dland', 'regbez', 'kreise', 'gemein')
 META_KEYS = GENESIS_REGIONS + ('stag', 'date', 'jahr', 'year', 'region_id', 'fact_id',
-                               'nuts', 'lau', 'cube', 'statistic', 'region_level', 'measure', 'value')
+                               'nuts', 'lau', 'cube', 'statistic', 'region_level', 'measure', 'value',
+                               'last_updated', 'last_downloaded', 'last_imported')
 EXCLUDE_KEYS = GENESIS_REGIONS + ('stag', 'jahr')
 EXCLUDE_FACT_ID_KEYS = set(META_KEYS) - set(('region_id', 'date', 'year'))
 REGION_LEVEL_NAMES = (  # FIXME internationalization
@@ -147,11 +148,13 @@ def get_fact_path_str(fact):
     return '%s%s' % (','.join(attributes), ('(%s)' % ','.join(sorted(dimensions)) if dimensions else ''))
 
 
-def serialize_fact(fact, cube_name=None, flat=False):
+def serialize_fact(fact, cube, flat=False):
     """convert `regensis.cube.Fact` to json-seriable dict"""
-    if cube_name:
-        fact['cube'] = cube_name
-        fact['statistic'] = cube_name[:5]
+    fact['cube'] = cube.name
+    fact['statistic'] = cube.name[:5]
+    fact['last_updated'] = to_date(cube.metadata['stand'], True)
+    fact['last_downloaded'] = cube.last_updated
+    fact['last_imported'] = cube.last_exported
     for level, key in enumerate(GENESIS_REGIONS):
         if fact.get(key.upper()):
             fact['region_id'] = fact.get(key.upper())
