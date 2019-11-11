@@ -94,13 +94,14 @@ def main(args):
             # add measures to schema
             if statistic_key in schema:
                 existing_measures = schema[statistic_key]['measures']
-                if measure_key not in existing_measures:
-                    existing_measures[measure_key] = measure_info
-                else:
-                    existing_measures[measure_key]['region_levels'] |= measure_info['region_levels']
-                    for k, v in measure_info['dimensions'].items():
-                        existing_measures[measure_key]['dimensions'][k] = v
-                    existing_measures[measure_key]['cubes'] |= measure_info['cubes']
+                for measure_key, measure_info in measures.items():
+                    if measure_key not in existing_measures:
+                        existing_measures[measure_key] = measure_info
+                    else:
+                        existing_measures[measure_key]['region_levels'] |= measure_info['region_levels']
+                        for k, v in measure_info['dimensions'].items():
+                            existing_measures[measure_key]['dimensions'][k] = v
+                        existing_measures[measure_key]['cubes'] |= measure_info['cubes']
             else:
                 schema[statistic_key] = statistic_info
                 schema[statistic_key]['measures'] = measures
