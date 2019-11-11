@@ -62,6 +62,7 @@ Before *really executing* this, read at least the notes below this list.
 
     mkdir ./data/
     CATALOG=catalog.yml genesapi fetch ./data/
+    genesapi build_names ./data/ > names.json
     genesapi build_schema ./data/ > schema.json
     genesapi build_es_template ./schema.json > template.json
     curl -H 'Content-Type: application/json' -XPOST http://localhost:9200/_template/genesapi -d@template.json
@@ -100,7 +101,8 @@ csv data *cubes* and transform them into a json-serializable format.
 ### Tasks:
 
 1. [**fetch**](#fetch)
-3. [build_schema](#build_schema)
+2. [build_schema](#build_schema)
+3. [build_names](#build_names)
 4. [build_markdown](#build_markdown)
 5. [build_es_template](#build_es_template)
 6. [**jsonify**](#jsonify)
@@ -236,6 +238,26 @@ Download logstash and install it somehow, use the logstash config in this repo.
 
 [See here a more detailed description how to set up an Elasticsearch cluster
 for genesapi](https://github.com/datenguide/datenguide-backend#setup-elasticsearch-locally-with-sample-data)
+
+
+#### build_names
+
+Create a id => name mapping for all the regions in json format.
+It has no history (changed names of regions neither the annoying *Gebietsreformen*)
+
+```
+usage: genesapi build_names [-h] storage
+
+positional arguments:
+  storage     Directory with raw cubes downloaded via the `fetch` command
+
+optional arguments:
+  -h, --help  show this help message and exit
+```
+
+Example:
+
+    genesapi build_names ./data/cubes/ > names.json
 
 
 #### build_schema

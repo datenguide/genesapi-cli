@@ -42,6 +42,12 @@ COMMANDS = {
             'help': 'Output directory.'
         })
     },
+    'build_names': {
+        'args': ({
+            'flag': 'storage',
+            'help': 'Directory with raw cubes downloaded via the `fetch` command'
+        }, )
+    },
     'build_es_template': {
         'args': ({
             'flag': 'schema',
@@ -67,10 +73,6 @@ COMMANDS = {
             'flag': 'storage',
             'help': 'Directory with raw cubes downloaded via the `fetch` command'
         }, {
-            'flag': '--long-format',
-            'help': 'Export as long table format, 1 doc per cube',
-            'action': 'store_true'
-        }, {
             'flag': '--output',
             'help': 'Output directory. If none, print each record per line to stdout'
         }, {
@@ -84,6 +86,10 @@ COMMANDS = {
         }, {
             'flag': '--force-export',
             'help': 'Serialize cubes even if they are up to date according to the storage.',
+            'action': 'store_true'
+        }, {
+            'flag': '--fulltext',
+            'help': 'Index schema and region names and context for fulltext search',
             'action': 'store_true'
         })
     },

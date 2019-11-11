@@ -1,3 +1,4 @@
+import copy
 import json
 import os
 import re
@@ -83,9 +84,16 @@ def cube_serializer(value):
 
 GENESIS_REGIONS = ('dinsg', 'dland', 'regbez', 'kreise', 'gemein')
 META_KEYS = GENESIS_REGIONS + ('stag', 'date', 'jahr', 'year', 'region_id', 'fact_id',
-                               'nuts', 'lau', 'cube', 'statistic', 'region_level')
+                               'nuts', 'lau', 'cube', 'statistic', 'region_level', 'measure', 'value')
 EXCLUDE_KEYS = GENESIS_REGIONS + ('stag', 'jahr')
 EXCLUDE_FACT_ID_KEYS = set(META_KEYS) - set(('region_id', 'date', 'year'))
+REGION_LEVEL_NAMES = (  # FIXME internationalization
+    ('Deutschland', 'Deutschland'),
+    ('Bundesland', 'Bundesländer'),
+    ('Regierungsbezirk oder statistische Region', 'Regierungsbezirke und statistische Regionen'),
+    ('Kreis oder kreisfreie Stadt', 'Kreise und kreisfreie Städte'),
+    ('Gemeinde', 'Gemeinden')
+)
 
 
 def slugify_graphql(value, to_lower=True):
@@ -141,7 +149,6 @@ def get_fact_path_str(fact):
 
 def serialize_fact(fact, cube_name=None, flat=False):
     """convert `regensis.cube.Fact` to json-seriable dict"""
-    fact = fact.to_dict()
     if cube_name:
         fact['cube'] = cube_name
         fact['statistic'] = cube_name[:5]
@@ -158,6 +165,7 @@ def serialize_fact(fact, cube_name=None, flat=False):
         date = datetime.strptime(fact['STAG']['value'], '%d.%m.%Y').date()
         fact['date'] = date.isoformat()
         fact['year'] = str(date.year)
+        del fact['STAG']
     if 'JAHR' in fact:
         fact['year'] = fact['JAHR']['value']
     # for easier time based analysis:
@@ -177,10 +185,6 @@ def serialize_fact(fact, cube_name=None, flat=False):
                 fact[k] = v['value']
 
     return json.loads(json.dumps(fact, default=time_to_json))
-
-
-def clean_description(raw):
-    return re.sub('.(\\n).', lambda x: x.group(0).replace('\n', ' '), re.sub('<.*?>', '', raw or '')).strip()
 
 
 def get_value_from_file(fp, default=None, transform=lambda x: x):
@@ -207,6 +211,39 @@ iso_regex = re.compile(
 
 def is_isoformat(value):
     return bool(iso_regex.match(value))
+
+
+def get_fulltext_data(data, cube):
+    dimensions = {d: {'name': cube.schema.dimensions[d]['title_de'],
+                      'value': cube.schema.dimensions[d]['value_names'][data[d]]}
+                  for d in set(cube.schema.dimensions) & set(data)}
+    level_name, level_name_plural = REGION_LEVEL_NAMES[data['region_level']]
+    return {
+        'region_name': cube.schema.regions[data['region_id']],
+        'region_level_name': level_name,
+        'region_level_name_plural': level_name_plural,
+        'statistic_name': cube.schema.statistic['title_de'],
+        'measure_name': cube.schema.measures[data['measure']]['title_de'],
+        'dimension_names': ', '.join('%s: %s' % (d['name'], d['value']) for d in dimensions.values()),
+        'dimensions': dimensions
+    }
+
+
+def unpack_fact(fact, schema):
+    """
+    if a fact from `regensis.cube.Fact` has more than one root key (`Merkmal`)
+    split this fact into as many facts as the original has root keys
+    """
+    if not isinstance(fact, dict):
+        fact = fact.to_dict()
+    root_keys = set(schema.measures) & set(fact.keys())
+    for key in root_keys:
+        new_fact = copy.deepcopy(fact)
+        new_fact['measure'] = key
+        new_fact['value'] = new_fact[key]['value']
+        for obsolete_key in root_keys - set([key]):
+            del new_fact[obsolete_key]
+        yield new_fact
 
 
 # https://docs.djangoproject.com/en/2.2/ref/utils/#module-django.utils.functional

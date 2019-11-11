@@ -84,10 +84,12 @@ class Mixin:
 
 
 class CubeSchema:
-    # FIXME clean description
-
     def __init__(self, regenesis_cube):
         self._cube = regenesis_cube
+
+    @cached_property
+    def statistic(self):
+        return self._cube.metadata['statistic']
 
     @cached_property
     def measures(self):
@@ -102,9 +104,17 @@ class CubeSchema:
                       if slugify_graphql(k) not in self._exclude_keys}
         for dimension in dimensions.values():
             # fix non-graphql-conform values keys
+            dimension['value_names'] = {v.data['name']: v.data['title_de'] for v in dimension['values']}
             dimension['values'] = [{**v.to_dict(), **{'key': slugify_graphql(v.name, False)}}
                                    for v in dimension['values']]
         return dimensions
+
+    @cached_property
+    def regions(self):
+        return {
+            v.data['name']: v.data['title_de'] for d in self._cube.dimensions.values()
+            if d.data['measure_type'].startswith('K-REG-MM') for v in d.values
+        }
 
     @cached_property
     def flat(self):

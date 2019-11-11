@@ -12,6 +12,22 @@ logger = logging.getLogger(__name__)
 
 
 def _get_template(schema, args):
+    # mapping = {
+    #     field: {'type': 'keyword'}
+    #     for field in set(f for v in schema.values() for f in v.get('args', {}).keys()
+    #                      | set(['id', 'year', 'nuts_level', 'fact_key']))
+    # }
+    # if args.fulltext:
+    #     mapping['fulltext_suggest'] = {
+    #         'type': 'completion'
+    #     }
+    #     mapping['fulltext_suggest_context'] = {
+    #         'type': 'completion',
+    #         'contexts': [{
+    #             'name': 'suggest_context',
+    #             'type': 'category'
+    #         }]
+    #     }
     return {
         'index_patterns': [args.index_pattern],
         'mappings': {
