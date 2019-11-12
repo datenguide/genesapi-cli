@@ -222,6 +222,7 @@ def get_fulltext_data(data, cube):
                   for d in set(cube.schema.dimensions) & set(data)}
     level_name, level_name_plural = REGION_LEVEL_NAMES[data['region_level']]
     return {
+        'year_name': data['year'],
         'region_name': cube.schema.regions[data['region_id']],
         'region_level_name': level_name,
         'region_level_name_plural': level_name_plural,
