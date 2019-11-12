@@ -84,6 +84,9 @@ COMMANDS = {
             'help': 'Indicate that this execution is run as a cronjob (for logging behaviour)',
             'action': 'store_true'
         }, {
+            'flag': '--prefix',
+            'help': 'Prefix for cube names to filter for'
+        }, {
             'flag': '--force-export',
             'help': 'Serialize cubes even if they are up to date according to the storage.',
             'action': 'store_true'

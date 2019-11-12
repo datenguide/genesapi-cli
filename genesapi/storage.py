@@ -247,7 +247,9 @@ class Cube(Mixin):
             else:
                 logger.error('Cube `%s` seems not to be valid' % self)
 
-    def should_export(self, force=False):
+    def should_export(self, force=False, prefix=None):
+        if prefix and not self.name.startswith(prefix):
+            return False
         if force:
             return True
         if self.last_exported:
@@ -301,8 +303,8 @@ class Storage(Mixin):
             cube = Cube(entry['code'], self)
             cube.update(force)
 
-    def get_cubes_for_export(self, force=False):
-        return [c for c in self if c.should_export(force)]
+    def get_cubes_for_export(self, force=False, prefix=None):
+        return [c for c in self if c.should_export(force, prefix)]
 
     def cube(self, name):
         if CUBE_NAME_RE.match(name):

@@ -63,7 +63,7 @@ def main(args):
         raise FileNotFoundError(args.output)
 
     storage = Storage(args.storage)
-    cubes = storage.get_cubes_for_export(args.force_export)
+    cubes = storage.get_cubes_for_export(args.force_export, args.prefix)
     logger.info('Starting to serialize %s cubes from `%s` ...' % (len(cubes), storage))
 
     i = 0
