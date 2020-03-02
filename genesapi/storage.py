@@ -126,8 +126,8 @@ class CubeSchema:
         return set(GENESIS_REGIONS.index(k.lower()) for k in self._cube.dimensions if k.lower() in GENESIS_REGIONS)
 
     @cached_property
-    def _exclude_keys(self):
-        return tuple(a.lower() for a in self.measures.keys()) + EXCLUDE_KEYS
+    def data_date_range(self):
+        return min(f.time['from'] for f in self._cube.facts), max(f.time['until'] for f in self._cube.facts)
 
 
 class CubeRevision(Mixin):

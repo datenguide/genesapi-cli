@@ -250,6 +250,32 @@ def unpack_fact(fact, schema):
         yield new_fact
 
 
+# FIXME
+def get_region_level(region_id):
+    region_id = str(region_id)
+    if region_id == 'DG':
+        return 0, 'Deutschland'
+    if len(region_id) == 2:
+        return 1, 'Bundesland'
+    if len(region_id) < 5:
+        return 2, 'Regierungsbezirk / stat. Region'
+    if len(region_id) == 5:
+        return 3, 'Landkreis / kreisfr. Stadt'
+    if len(region_id) > 5:
+        return 4, 'Gemeinde'
+
+
+def get_region(data):
+    region_id = data['name']
+    level, level_name = get_region_level(region_id)
+    return {
+        'id': region_id,
+        'name': data['title_de'],
+        'type': level_name,
+        'level': level
+    }
+
+
 # https://docs.djangoproject.com/en/2.2/ref/utils/#module-django.utils.functional
 class cached_property:
     """
