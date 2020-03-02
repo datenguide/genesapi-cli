@@ -62,7 +62,7 @@ Before *really executing* this, read at least the notes below this list.
 
     mkdir ./data/
     CATALOG=catalog.yml genesapi fetch ./data/
-    genesapi build_names ./data/ > names.json
+    genesapi build_regions ./data/ > regions.json
     genesapi build_schema ./data/ > schema.json
     genesapi build_es_template ./schema.json > template.json
     curl -H 'Content-Type: application/json' -XPOST http://localhost:9200/_template/genesapi -d@template.json
@@ -102,7 +102,7 @@ csv data *cubes* and transform them into a json-serializable format.
 
 1. [**fetch**](#fetch)
 2. [build_schema](#build_schema)
-3. [build_names](#build_names)
+3. [build_regions](#build_regions)
 4. [build_markdown](#build_markdown)
 5. [build_es_template](#build_es_template)
 6. [**jsonify**](#jsonify)
@@ -240,13 +240,27 @@ Download logstash and install it somehow, use the logstash config in this repo.
 for genesapi](https://github.com/datenguide/datenguide-backend#setup-elasticsearch-locally-with-sample-data)
 
 
-#### build_names
+#### build_regions
 
-Create a id => name mapping for all the regions in json format.
-It has no history (changed names of regions neither the annoying *Gebietsreformen*)
+Create a id => region mapping for all the regions in json format.
+
+```js
+{
+    "08425": {
+        "id": "08425", // AGS for the region
+        "name": "Alb-Donau-Kreis", // Nicely formated name of the region
+        "type": "Landkreis", // Type of region (e.g. Kreisfreie Stadt, Regierungsbezirk)
+        "level": 3, // NUTS level (1-3), LAU (4)
+        "duration": {
+            "from": "2012-01-01", // ISO dates for earliest available statistical measure
+            "until": "2019-12-31"  // ISO dates for latest available statistical measure
+        }
+    },
+}
+```
 
 ```
-usage: genesapi build_names [-h] storage
+usage: genesapi build_regions [-h] storage
 
 positional arguments:
   storage     Directory with raw cubes downloaded via the `fetch` command
@@ -257,7 +271,7 @@ optional arguments:
 
 Example:
 
-    genesapi build_names ./data/cubes/ > names.json
+    genesapi build_regions ./data/cubes/ > names.json
 
 
 #### build_schema
