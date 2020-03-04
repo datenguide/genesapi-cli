@@ -43,6 +43,7 @@ from regenesis.cube import Cube as RegenesisCube
 from genesapi.exceptions import StorageDoesNotExist, ShouldNotHappen
 from genesapi.soap_services import IndexService, ExportService
 from genesapi.util import (
+    EXCLUDE_KEYS,
     cached_property,
     get_value_from_file,
     is_isoformat,
@@ -127,6 +128,10 @@ class CubeSchema:
     @cached_property
     def data_date_range(self):
         return min(f.time['from'] for f in self._cube.facts), max(f.time['until'] for f in self._cube.facts)
+
+    @cached_property
+    def _exclude_keys(self):
+        return tuple(a.lower() for a in self.measures.keys()) + EXCLUDE_KEYS
 
 
 class CubeRevision(Mixin):
@@ -316,6 +321,10 @@ class Storage(Mixin):
     @cached_property
     def _cubes(self):
         return (c._cube for c in self)
+
+    @cached_property
+    def _exclude_keys(self):
+        return tuple(a.lower() for a in self.measures.keys()) + EXCLUDE_KEYS
 
     @cached_property
     def webservice_url(self):
