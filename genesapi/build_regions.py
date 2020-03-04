@@ -67,7 +67,6 @@ def main(args):
         df = pd.DataFrame(res['aggregations']['regions']['buckets'])
         df['from'] = df['from'].map(lambda x: x['value_as_string'])
         df['until'] = df['until'].map(lambda x: x['value_as_string'])
-        df['facts'] = df['facts'].map(int)
         df.index = df['key']
         for region_id, region in regions.items():
             try:
@@ -76,7 +75,7 @@ def main(args):
                     'from': enrich['from'],
                     'until': enrich['until'],
                 }
-                region['facts'] = enrich['doc_count']
+                region['facts'] = int(enrich['doc_count'])
             except KeyError:
                 pass
 
