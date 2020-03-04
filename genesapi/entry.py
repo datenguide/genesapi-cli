@@ -42,11 +42,17 @@ COMMANDS = {
             'help': 'Output directory.'
         })
     },
-    'build_names': {
+    'build_regions': {
         'args': ({
             'flag': 'storage',
             'help': 'Directory with raw cubes downloaded via the `fetch` command'
-        }, )
+        }, {
+            'flag': '--host',
+            'help': 'Elastic host:port to obtain stats from'
+        }, {
+            'flag': '--index',
+            'help': 'Elastic index'
+        })
     },
     'build_es_template': {
         'args': ({

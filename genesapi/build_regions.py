@@ -1,6 +1,9 @@
 """
 build name mapping for regions
 
+- obtain names from storage
+- obtain date ranges from ES aggregations
+
 {
     "08425": {
         "id": "08425", // AGS for the region
@@ -18,7 +21,11 @@ build name mapping for regions
 
 import json
 import logging
+import os
 import sys
+import pandas as pd
+
+from elasticsearch import Elasticsearch
 
 from genesapi.storage import Storage
 from genesapi.util import time_to_json
@@ -29,22 +36,48 @@ logger = logging.getLogger(__name__)
 
 def main(args):
     storage = Storage(args.storage)
-    names = {}
+    regions = {}
     for cube in storage:
         logger.info('Loading `%s` ...' % cube.name)
-        min_date, max_date = cube.schema.data_date_range
         for region_id, region in cube.schema.regions.items():
-            if region_id in names:
-                _min_date = names[region_id]['duration']['from']
-                _max_date = names[region_id]['duration']['until']
-                names[region_id]['duration']['from'] = min(min_date, _min_date)
-                names[region_id]['duration']['until'] = max(max_date, _max_date)
+            # take the shortest name
+            if region_id in regions:
+                if len(regions[region_id]['name']) > len(region['name']):
+                    regions[region_id]['name'] = region['name']
             else:
-                names[region_id] = {**region, **{
-                    'duration': {
-                        'from': min_date,
-                        'until': max_date
-                    }
-                }}
+                regions[region_id] = region
 
-    sys.stdout.write(json.dumps(names, default=time_to_json))
+    if args.host and args.index:
+        logger.info(f'Aggregate dates from ES: {args.host}/{args.index}')
+        auth = os.getenv('ELASTIC_AUTH', None)
+        es = Elasticsearch(hosts=[args.host], http_auth=auth)
+        logger.info(es)
+        query = {
+            'aggs': {
+                'regions': {
+                    'terms': {'field': 'region_id', 'size': 16000},
+                    'aggs': {
+                        'from': {'min': {'field': 'date'}},
+                        'until': {'max': {'field': 'date'}}
+                    }
+                }
+            }
+        }
+        res = es.search(index=args.index, body=query)
+        df = pd.DataFrame(res['aggregations']['regions']['buckets'])
+        df['from'] = df['from'].map(lambda x: x['value_as_string'])
+        df['until'] = df['until'].map(lambda x: x['value_as_string'])
+        df['facts'] = df['facts'].map(int)
+        df.index = df['key']
+        for region_id, region in regions.items():
+            try:
+                enrich = df.loc[region_id]
+                region['duration'] = {
+                    'from': enrich['from'],
+                    'until': enrich['until'],
+                }
+                region['facts'] = enrich['doc_count']
+            except KeyError:
+                pass
+
+    sys.stdout.write(json.dumps(regions, default=time_to_json))

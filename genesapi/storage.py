@@ -48,8 +48,7 @@ from genesapi.util import (
     is_isoformat,
     to_date,
     slugify_graphql,
-    EXCLUDE_KEYS,
-    GENESIS_REGIONS
+    get_region
 )
 
 
@@ -112,7 +111,7 @@ class CubeSchema:
     @cached_property
     def regions(self):
         return {
-            v.data['name']: v.data['title_de'] for d in self._cube.dimensions.values()
+            v.data['name']: get_region(v.data) for d in self._cube.dimensions.values()
             if d.data['measure_type'].startswith('K-REG-MM') for v in d.values
         }
 
